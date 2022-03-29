@@ -44,5 +44,5 @@ DELETE_DB = conf.get('MONGO_BACKUP', 'DELETE_DB', fallback=MONGO_DB)
 DELETE_COLLECTIONS = json.loads(
     conf.get('MONGO_BACKUP', 'DELETE_COLLECTIONS', fallback=json.dumps(MONGO_COLLECTIONS)))
 
-# mongo連線
+# mongo連線 匯入
 mongo = MongoClient(MONGO_TARGET_HOST)
