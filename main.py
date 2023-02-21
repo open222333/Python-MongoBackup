@@ -1,17 +1,28 @@
-from general.mongodb_function import mongodump, mongorestore
-from general.mongodb_function import drop_collection, delete_all_document
-from general.tool_function import get_lastst_date
+from general.func_mongodb import mongodump, mongorestore
+from general.func_mongodb import drop_collection, delete_all_document
+from general.func_tool import get_lastst_date
 from general import MONGO_COLLECTIONS,  MONGO_DB
 from general import MONGO_HOST, TARGET_PATH, MONGO_TARGET_HOST
 from general import MONGO_DUMP, MONGO_RESTORE
 from general import DATE, COLLECTION_USE_DATA, DROP_COLLECTIONS
-from general import DELETE_COLLECTIONS_DOCUMENTS, DELETE_DB,DELETE_COLLECTIONS
+from general import DELETE_COLLECTIONS_DOCUMENTS, DELETE_DB, DELETE_COLLECTIONS
+from general import LOG_LEVEL
+from general.func_logger import Log
 import os
+
+
+logger = Log(__name__)
+logger.set_date_handler()
+logger.set_msg_handler()
+if LOG_LEVEL:
+    logger.set_level(LOG_LEVEL)
+
 
 # 執行匯出
 if MONGO_DUMP:
     if len(MONGO_COLLECTIONS) != 0:
         for col in MONGO_COLLECTIONS:
+            logger.info(f'執行匯出 host:{MONGO_TARGET_HOST} target_path:{TARGET_PATH} db:{MONGO_DB} col: {col}')
             mongodump(
                 host=MONGO_HOST,
                 db=MONGO_DB,
@@ -25,6 +36,7 @@ if MONGO_RESTORE:
     # 刪除目前的集合
     if DROP_COLLECTIONS:
         if len(MONGO_COLLECTIONS) != 0:
+            logger.info(f'執行匯入 刪除目前的集合 {MONGO_DB} {MONGO_COLLECTIONS}')
             drop_collection(MONGO_DB, MONGO_COLLECTIONS)
 
     for col in MONGO_COLLECTIONS:
@@ -40,6 +52,7 @@ if MONGO_RESTORE:
         if COLLECTION_USE_DATA:
             col_name = f'{col}_{DATE}'
 
+        logger.info(f'執行匯入 host:{MONGO_TARGET_HOST} target_path:{target} db:{MONGO_DB} col: {col_name}')
         mongorestore(
             host=MONGO_TARGET_HOST,
             db=MONGO_DB,
@@ -52,4 +65,5 @@ if MONGO_RESTORE:
 if DELETE_COLLECTIONS_DOCUMENTS:
     if len(DELETE_COLLECTIONS) != 0:
         for col in DELETE_COLLECTIONS:
+            logger.info(f'清空集合資料 {col}')
             delete_all_document(DELETE_DB, DELETE_COLLECTIONS)

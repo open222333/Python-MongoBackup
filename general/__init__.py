@@ -11,6 +11,8 @@ conf.read('config.ini', encoding='utf-8')
 # 預設備份檔位置
 default_dir = f"{os.environ['HOME']}/mongo_backup/"
 
+LOG_LEVEL = conf.get('MONGO_BACKUP', 'LOG_LEVEL', fallback=None)
+
 # 匯出匯入 功能開關
 MONGO_DUMP = conf.getint('MONGO_BACKUP', 'MONGO_DUMP', fallback=0)
 MONGO_RESTORE = conf.getint('MONGO_BACKUP', 'MONGO_RESTORE', fallback=0)
