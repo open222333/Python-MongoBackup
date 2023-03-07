@@ -22,7 +22,7 @@ if LOG_LEVEL:
 if MONGO_DUMP:
     if len(MONGO_COLLECTIONS) != 0:
         for col in MONGO_COLLECTIONS:
-            logger.info(f'執行匯出 host:{MONGO_TARGET_HOST} target_path:{TARGET_PATH} db:{MONGO_DB} col: {col}')
+            logger.info(f'執行匯出 host:{MONGO_HOST} target_path:{TARGET_PATH} db:{MONGO_DB} col: {col}')
             mongodump(
                 host=MONGO_HOST,
                 db=MONGO_DB,
