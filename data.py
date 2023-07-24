@@ -2,6 +2,10 @@ from pymongo import MongoClient
 from argparse import ArgumentParser
 from src.mongo import MongoRandomSample
 
+'''
+建立測試用資料庫 隨機取得資料
+'''
+
 parse = ArgumentParser()
 parse.add_argument('-h', '--host', type=str, help='主機', required=True)
 parse.add_argument('-d', '--database', type=str, help='資料庫', required=True)

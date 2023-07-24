@@ -8,12 +8,12 @@ from .logger import Log
 from . import LOG_LEVEL, LOG_FILE_DISABLE
 
 
-logger = Log()
+mongo_logger = Log()
 if LOG_LEVEL:
-    logger.set_level(LOG_LEVEL)
+    mongo_logger.set_level(LOG_LEVEL)
 if not LOG_FILE_DISABLE:
-    logger.set_date_handler()
-logger.set_msg_handler()
+    mongo_logger.set_date_handler()
+mongo_logger.set_msg_handler()
 
 
 class MongoTool():
@@ -25,13 +25,15 @@ class MongoTool():
         self.database = database
         self.collection = collection
         self.dir_path = dir_path
+
         if date:
             self.date = date
         else:
             self.date = datetime.now().__format__('%Y%m%d')
 
-        if not os.path.exists(f'{self.dir_path}/{self.date}'):
-            os.makedirs(f'{self.dir_path}/{self.date}')
+        self.backup_dir_path = f'{self.dir_path}/{self.date}'
+        if not os.path.exists(self.backup_dir_path):
+            os.makedirs(self.backup_dir_path)
 
     def set_dir_path(self, dir_path: str):
         """設置 備份檔放置路徑
@@ -40,6 +42,7 @@ class MongoTool():
             dir_path (str): 資料夾路徑
         """
         self.dir_path = dir_path
+        self.backup_dir_path = f'{self.dir_path}/{self.date}'
 
     def set_date(self, date: str):
         """設置 日期
@@ -67,7 +70,7 @@ class MongoTool():
             try:
                 stock[datetime.strptime(date, format_date)] = date
             except Exception as err:
-                logger.error(err, exc_info=True)
+                mongo_logger.error(err, exc_info=True)
                 return None
         return stock[max(stock.keys())]
 
@@ -77,19 +80,17 @@ class MongoTool():
         Returns:
             bool: _description_
         """
-        logger.info(f'匯出  {self.database} {self.collection} 至 {self.dir_path}/{self.collection}/{self.date}')
-        command = f'mongodump --quiet -h {self.host} -d {self.database} -c {self.collection} -o {self.dir_path}/{self.collection}/{self.date}'
-        logger.debug(f'指令:\n{command}')
+        mongo_logger.info(f'匯出  {self.database} {self.collection} 至 {self.backup_dir_path}')
+        command = f'mongodump --quiet -h {self.host} -d {self.database} -c {self.collection} -o {self.backup_dir_path}'
+        mongo_logger.debug(f'指令:\n{command}')
         try:
-            result = subprocess.run(command)
-            stdout = result.stdout.decode("utf-8")
-            stderr = result.stderr.decode("utf-8")
-            if stdout:
-                logger.debug(f'結果: {stdout}')
-            if stderr:
-                logger.error(f'錯誤: {stdout}')
+            result = subprocess.run(command, shell=True, capture_output=True, text=True)
+            if result.returncode == 0:
+                mongo_logger.debug(f'結果:\n{result.stderr}')
+            else:
+                mongo_logger.error(f'錯誤:\n{result.stderr}')
         except Exception as err:
-            logger.error(err, exc_info=True)
+            mongo_logger.error(err, exc_info=True)
             return False
         return True
 
@@ -103,42 +104,40 @@ class MongoTool():
             _type_: _description_
         """
         if name:
-            logger.info(f'匯入 {self.dir_path}/{self.database}/{self.collection}.bson 至 {self.database} {name}')
-            command = f'mongorestore -h {self.host} -d {self.database} -c {name} {self.dir_path}/{self.database}/{self.collection}.bson'
+            mongo_logger.info(f'匯入 {self.backup_dir_path}/{self.database}/{self.collection}.bson 至 {self.database} {name}')
+            command = f'mongorestore -h {self.host} -d {self.database} -c {name} {self.backup_dir_path}/{self.database}/{self.collection}.bson'
         else:
-            logger.info(f'匯入 {self.dir_path}/{self.database}/{self.collection}.bson 至 {self.database} {self.collection}')
-            command = f'mongorestore -h {self.host} -d {self.database} -c {self.collection} {self.dir_path}/{self.database}/{self.collection}.bson'
-        logger.debug(f'指令\n{command}')
+            mongo_logger.info(f'匯入 {self.backup_dir_path}/{self.database}/{self.collection}.bson 至 {self.database} {self.collection}')
+            command = f'mongorestore -h {self.host} -d {self.database} -c {self.collection} {self.backup_dir_path}/{self.database}/{self.collection}.bson'
+        mongo_logger.debug(f'指令\n{command}')
         try:
-            result = subprocess.run(command)
-            stdout = result.stdout.decode("utf-8")
-            stderr = result.stderr.decode("utf-8")
-            if stdout:
-                logger.debug(f'結果: {stdout}')
-            if stderr:
-                logger.error(f'錯誤: {stdout}')
+            result = subprocess.run(command, shell=True, capture_output=True, text=True)
+            if result.returncode == 0:
+                mongo_logger.debug(f'結果:\n{result.stderr}')
+            else:
+                mongo_logger.error(f'錯誤:\n{result.stderr}')
         except Exception as err:
-            logger.error(err, exc_info=True)
+            mongo_logger.error(err, exc_info=True)
             return False
         return True
 
     def drop_collection(self) -> bool:
         '''移除collection'''
         try:
-            logger.info(f'刪除 {self.database} {self.collection}')
+            mongo_logger.info(f'刪除 {self.database} {self.collection}')
             self.mongo[self.database][self.collection].drop()
         except Exception as err:
-            logger.error(err, exc_info=True)
+            mongo_logger.error(err, exc_info=True)
             return False
         return True
 
     def delete_all_document(self) -> bool:
         '''清空collection內所有資料'''
         try:
-            logger.info(f'刪除 {self.database} {self.collection} 內所有資料')
+            mongo_logger.info(f'刪除 {self.database} {self.collection} 內所有資料')
             self.mongo[self.database][self.collection].delete_many({})
         except Exception as err:
-            logger.error(err, exc_info=True)
+            mongo_logger.error(err, exc_info=True)
             return False
         return True
 

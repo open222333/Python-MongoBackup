@@ -1,7 +1,17 @@
 [
   {
-    "date":"20230710",
-    "host":"",
+    "execute": true,
+    "dump": true,
+    "restore": true,
+    "host": "",
+    "database": "",
+    "collections": ""
+  },
+  {
+    "execute": true,
+    "dump": true,
+    "restore": true,
+    "host": "",
     "database": "",
     "collections": ""
   }

@@ -28,4 +28,4 @@ with open(JSON_PATH, 'r') as f:
     MONGO_INFO = json.loads(f.read())
 
 # 設定放置備份檔案資料夾位置 預設 output/
-OUTPUT_DIR = conf.get('SETTING', 'OUTPUT_DIR', fallback='output')
+OUTPUT_DIR = conf.get('SETTING', 'OUTPUT_DIR', fallback=f'{os.getcwd()}/output')
