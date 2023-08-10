@@ -144,18 +144,21 @@ class MongoTool():
 
 class MongoRandomSample():
 
-    def __init__(self, host: str, database: str, collection: str) -> None:
+    def __init__(self, host: str, database: str, collection: str, remove_id: bool = True) -> None:
         """抽樣指定資料庫以及集合的資料,數量預設為200
 
         Args:
+            host (str): 主機
             db (str): 要抽取樣本的資料庫名稱
             collection (str): 要抽取樣本的集合名稱
+            remove_id (bool): 刪除_id, 隨機資料以新的_id建立. Default to True.
         """
         self.sample_size = 200
         self.client = MongoClient(host)
         self.database = database
         self.collection = collection
         self.query = None
+        self.remove_id = remove_id
 
     def set_sample_size(self, size: int):
         """設置樣本數量
@@ -166,6 +169,8 @@ class MongoRandomSample():
         self.sample_size = size
 
     def set_query(self, **kwargs):
+        """設置搜尋條件
+        """
         self.query = kwargs
 
     def get_random_datas(self):
@@ -175,8 +180,13 @@ class MongoRandomSample():
             list: mongo文件
         """
         if self.query:
-            documents = list(self.client[self.db][self.collection].find(self.query))
+            documents = list(self.client[self.database][self.collection].find(self.query))
         else:
-            documents = list(self.client[self.db][self.collection].find())
+            documents = list(self.client[self.database][self.collection].find())
+
+        if self.remove_id:
+            for doc in documents:
+                doc.pop('_id', None)
+
         random_documents = random.sample(documents, min(len(documents), self.sample_size))
         return random_documents

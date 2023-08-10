@@ -1,0 +1,54 @@
+[
+  {
+    "execute": true,
+    "action": {
+      "dump": false,
+      "restore": false,
+      "restore_date": "20230101"
+    },
+    "host": "",
+    "hostname": "",
+    "items": [
+      {
+        "database": "",
+        "collections": [
+          "",
+          ""
+        ]
+      },
+      {
+        "database": "",
+        "collections": [
+          "",
+          ""
+        ]
+      }
+    ]
+  },
+  {
+    "execute": false,
+    "action": {
+      "dump": false,
+      "restore": false,
+      "restore_date": null
+    },
+    "host": "",
+    "hostname": null,
+    "items": [
+      {
+        "database": "",
+        "collections": [
+          "",
+          ""
+        ]
+      },
+      {
+        "database": "",
+        "collections": [
+          "",
+          ""
+        ]
+      }
+    ]
+  }
+]

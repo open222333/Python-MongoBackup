@@ -5,7 +5,7 @@ import os
 
 
 conf = ConfigParser(os.environ)
-conf.read('.conf/config.ini', encoding='utf-8')
+conf.read(os.path.join('conf', 'config.ini'), encoding='utf-8')
 
 # 預設備份檔位置
 default_dir = f"{os.environ['HOME']}/mongo_backup/"
@@ -23,9 +23,12 @@ LOG_FILE_DISABLE = conf.getboolean('LOG', 'LOG_FILE_DISABLE', fallback=True)
 if LOG_DISABLE:
     logging.disable()
 
-JSON_PATH = conf.get('SETTING', 'JSON_PATH', fallback='.conf/mongo.json')
-with open(JSON_PATH, 'r') as f:
-    MONGO_INFO = json.loads(f.read())
-
+JSON_PATH = conf.get('SETTING', 'JSON_PATH', fallback=os.path.join('conf', 'mongo.json'))
+if os.path.exists(JSON_PATH):
+    with open(JSON_PATH, 'r') as f:
+        MONGO_INFO = json.loads(f.read())
+else:
+    MONGO_INFO = []
+    
 # 設定放置備份檔案資料夾位置 預設 output/
 OUTPUT_DIR = conf.get('SETTING', 'OUTPUT_DIR', fallback=f'{os.getcwd()}/output')
