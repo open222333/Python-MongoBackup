@@ -18,6 +18,9 @@
       "restore": {
         "execute": false,
         "date": "20230101",
+        "drop_collection": false,
+        "clear_doc": false,
+        "attach_date": false,
         "items": [
           {
             "database": "database1",

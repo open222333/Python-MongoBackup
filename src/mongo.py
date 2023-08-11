@@ -103,19 +103,24 @@ class MongoTool():
         Returns:
             _type_: _description_
         """
+        bson_file = f'{self.backup_dir_path}/{self.database}/{self.collection}.bson'
         if name:
-            mongo_logger.info(f'匯入 {self.backup_dir_path}/{self.database}/{self.collection}.bson 至 {self.database} {name}')
-            command = f'mongorestore -h {self.host} -d {self.database} -c {name} {self.backup_dir_path}/{self.database}/{self.collection}.bson'
+            mongo_logger.info(f'匯入 {bson_file} 至 {self.database} {name}')
+            command = f'mongorestore -h {self.host} -d {self.database} -c {name} {bson_file}'
         else:
-            mongo_logger.info(f'匯入 {self.backup_dir_path}/{self.database}/{self.collection}.bson 至 {self.database} {self.collection}')
-            command = f'mongorestore -h {self.host} -d {self.database} -c {self.collection} {self.backup_dir_path}/{self.database}/{self.collection}.bson'
-        mongo_logger.debug(f'指令\n{command}')
+            mongo_logger.info(f'匯入 {bson_file} 至 {self.database} {self.collection}')
+            command = f'mongorestore -h {self.host} -d {self.database} -c {self.collection} {bson_file}'
+
         try:
-            result = subprocess.run(command, shell=True, capture_output=True, text=True)
-            if result.returncode == 0:
-                mongo_logger.debug(f'結果:\n{result.stderr}')
+            if os.path.exists(bson_file):
+                mongo_logger.debug(f'指令\n{command}')
+                result = subprocess.run(command, shell=True, capture_output=True, text=True)
+                if result.returncode == 0:
+                    mongo_logger.debug(f'結果:\n{result.stderr}')
+                else:
+                    mongo_logger.error(f'錯誤:\n{result.stderr}')
             else:
-                mongo_logger.error(f'錯誤:\n{result.stderr}')
+                raise FileNotFoundError(f'{bson_file} 不存在')
         except Exception as err:
             mongo_logger.error(err, exc_info=True)
             return False

@@ -5,66 +5,62 @@
 還原mongodb測試資料環境小工具
 ```
 
-# backup.py - 批量mongodb備份 - 匯出匯入 預設根據 conf/mongo.json 設定執行
+# mongo.json 說明
 
 ```json
 // conf/mongo.json
 [
   {
     "execute": true, // 是否執行
+    "host": "",
+    "hostname": "", // 若未指定 則顯示本機
     "action": {
-      "dump": false, // 匯出
-      "restore": false, // 匯入 以最新日期進行匯入
-	  "random": {
-		// 隨機資料 根據 old_collection_name1 建立 new_collection_name1
-        "old_collection_name1": "new_collection_name1",
-        "old_collection_name2": "new_collection_name2"
-      }
-    },
-    "host": "127.0.0.1:27017",
-	"hostname": null, // 若未指定 則顯示本機
-    "items": [
-      {
-        "database": "database1",
-        "collections": [
-          "collection_1",
-          "collection_2"
+      "dump": {
+		// 匯出 相關設定
+        "execute": false, // 是否執行
+        "items": [	// 指定 資料庫 集合
+          {
+            "database": "database1",
+            "collections": [
+              "collection1"
+            ]
+          }
         ]
       },
-      {
-        "database": "database2",
-        "collections": [
-          "collection_1",
-          "collection_2"
+      "restore": {
+		// 匯入 相關設定
+        "execute": false,
+        "date": "20230101", // 匯入指定日期(需存在)的備份檔
+		"drop_collection": false, // 匯入同時刪除目前同名稱集合
+        "clear_doc": false, // 匯入同時清除collection內所有文檔
+        "attach_date": false, // 匯入時 集合名稱附加日期
+        "items": [
+          {
+            "database": "database1",
+            "collections": [
+              "collection1"
+            ]
+          }
         ]
+      },
+      "random": {
+		// 隨機資料 根據 old_collection_name1 建立 new_collection_name1
+        "old_collection_name1": {
+          "name": "new_collection_name1",
+          "amount": null // 指定抽取資料數量
+        }
       }
-    ]
+    }
   }
 ]
 ```
 
+# backup.py - 批量mongodb備份 - 匯出匯入 預設根據 conf/mongo.json 設定執行
+
 ```bash
-usage: backup.py [-h] [-d] [-r] [--date DATE] [--drop_collection]
-                 [--clear_doc] [--attach_date]
+usage: backup.py [-h]
 
 批量mongodb備份 - 匯出匯入 預設根據 conf/mongo.json 設定執行
-
-optional arguments:
-  -h, --help         show this help message and exit
-
-功能:
-  可使用json設置是否使用以下功能
-
-  -d, --dump         匯出
-  -r, --restore      匯入
-
-匯入附加功能:
-  匯入時使用
-
-  --date DATE        日期
-  --drop_collection  刪除目前集合
-  --clear_doc        清除collection內文檔
-  --attach_date      集合名稱附加日期
 ```
 
 # data.py - 建立測試用資料庫 隨機取得資料
