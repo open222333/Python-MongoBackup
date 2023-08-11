@@ -14,7 +14,12 @@
     "execute": true, // 是否執行
     "action": {
       "dump": false, // 匯出
-      "restore": false // 匯入 以最新日期進行匯入
+      "restore": false, // 匯入 以最新日期進行匯入
+	  "random": {
+		// 隨機資料 根據 old_collection_name1 建立 new_collection_name1
+        "old_collection_name1": "new_collection_name1",
+        "old_collection_name2": "new_collection_name2"
+      }
     },
     "host": "127.0.0.1:27017",
 	"hostname": null, // 若未指定 則顯示本機

@@ -1,54 +1,38 @@
 [
   {
     "execute": true,
-    "action": {
-      "dump": false,
-      "restore": false,
-      "restore_date": "20230101"
-    },
     "host": "",
     "hostname": "",
-    "items": [
-      {
-        "database": "",
-        "collections": [
-          "",
-          ""
-        ]
-      },
-      {
-        "database": "",
-        "collections": [
-          "",
-          ""
-        ]
-      }
-    ]
-  },
-  {
-    "execute": false,
     "action": {
-      "dump": false,
-      "restore": false,
-      "restore_date": null
-    },
-    "host": "",
-    "hostname": null,
-    "items": [
-      {
-        "database": "",
-        "collections": [
-          "",
-          ""
+      "dump": {
+        "execute": false,
+        "items": [
+          {
+            "database": "database1",
+            "collections": [
+              "collection1"
+            ]
+          }
         ]
       },
-      {
-        "database": "",
-        "collections": [
-          "",
-          ""
+      "restore": {
+        "execute": false,
+        "date": "20230101",
+        "items": [
+          {
+            "database": "database1",
+            "collections": [
+              "collection1"
+            ]
+          }
         ]
+      },
+      "random": {
+        "old_collection_name1": {
+          "name": "new_collection_name1",
+          "amount": null
+        }
       }
-    ]
+    }
   }
 ]

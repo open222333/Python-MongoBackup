@@ -8,7 +8,7 @@ from .logger import Log
 from . import LOG_LEVEL, LOG_FILE_DISABLE
 
 
-mongo_logger = Log()
+mongo_logger = Log('MONGO')
 if LOG_LEVEL:
     mongo_logger.set_level(LOG_LEVEL)
 if not LOG_FILE_DISABLE:
@@ -185,6 +185,7 @@ class MongoRandomSample():
             documents = list(self.client[self.database][self.collection].find())
 
         if self.remove_id:
+            mongo_logger.info('移除 隨機資料 _id欄位')
             for doc in documents:
                 doc.pop('_id', None)
 

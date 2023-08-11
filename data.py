@@ -1,7 +1,10 @@
 from pymongo import MongoClient
 from argparse import ArgumentParser
 from src.mongo import MongoRandomSample
+from src.progress_bar import ProgressBar
 from src import MONGO_INFO
+from time import sleep
+from threading import Thread
 
 '''
 建立測試用資料庫 隨機取得資料
@@ -28,10 +31,16 @@ def run(host, database, collection, new_collection=None, amount=args.random, rem
     client = MongoClient(host)
     mrs.set_sample_size(amount)
     datas = mrs.get_random_datas()
+
+    if new_collection == None:
+        new_collection = f'random_{collection}'
+
+    p = ProgressBar(title=f'建立 {database}.{new_collection} ')
+
     for data in datas:
-        if new_collection == None:
-            new_collection = f'random_{collection}'
+        p(total=len(datas), in_loop=True)
         client[database][new_collection].insert_one(data)
+        sleep(1)
 
 
 if __name__ == "__main__":
@@ -39,13 +48,23 @@ if __name__ == "__main__":
         for info in MONGO_INFO:
             if info['execute']:
                 for item in info['items']:
+                    threads = []
                     for collection in item['collections']:
-                        run(
-                            host=info['host'],
-                            database=item['database'],
-                            collection=collection,
-                            new_collection=args.new_collection
+                        thread = Thread(
+                            target=run,
+                            kwargs={
+                                "host": info['host'],
+                                "database": item['database'],
+                                "collection": collection,
+                                "new_collection": info['action']['random'][collection]
+                            }
                         )
+                        threads.append(thread)
+                        thread.start()
+
+                    # 等待所有執行緒結束
+                    for thread in threads:
+                        thread.join()
     else:
         run(
             host=args.host,

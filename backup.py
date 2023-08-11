@@ -14,6 +14,7 @@ import os
 
 parser = ArgumentParser(description='批量mongodb備份 - 匯出匯入 預設根據 conf/mongo.json 設定執行')
 group = parser.add_argument_group(title='功能', description='可使用json設置是否使用以下功能')
+group.add_argument('--json', action='store_true', help='使用json設定檔執行')
 group.add_argument('-d', '--dump', action='store_true', help='匯出')
 group.add_argument('-r', '--restore', action='store_true', help='匯入')
 restore_group = parser.add_argument_group(title='匯入附加功能', description='匯入時使用')
