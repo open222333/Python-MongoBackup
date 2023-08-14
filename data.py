@@ -47,17 +47,20 @@ if __name__ == "__main__":
     if args.json:
         for info in MONGO_INFO:
             if info['execute']:
-                for item in info['items']:
-                    threads = []
-                    for collection in item['collections']:
+                for database, items in info['action']['random'].items():
+                    for collection, item in items.items():
+                        threads = []
+                        kwargs = {
+                            "host": info['host'],
+                            "database": database,
+                            "collection": collection,
+                            "new_collection": item['name']
+                        }
+                        if item['amount']:
+                            kwargs['amount'] = item['amount']
                         thread = Thread(
                             target=run,
-                            kwargs={
-                                "host": info['host'],
-                                "database": item['database'],
-                                "collection": collection,
-                                "new_collection": info['action']['random'][collection]
-                            }
+                            kwargs=kwargs
                         )
                         threads.append(thread)
                         thread.start()

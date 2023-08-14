@@ -22,13 +22,14 @@ if __name__ == "__main__":
                 hostname = info['hostname']
             else:
                 hostname = socket.gethostname()
-            for item in info['items']:
-                database = item['database']
-                collections = item['collections']
-                if len(collections) == 0:
-                    continue
-                # 執行匯出
-                if info['action']['dump']['execute']:
+
+            # 執行匯出
+            if info['action']['dump']['execute']:
+                for item in info['action']['dump']['items']:
+                    database = item['database']
+                    collections = item['collections']
+                    if len(collections) == 0:
+                        continue
                     for collection in collections:
                         mt = MongoTool(
                             host=info['host'],
@@ -37,8 +38,15 @@ if __name__ == "__main__":
                             dir_path=os.path.join(OUTPUT_DIR, hostname)
                         )
                         mt.dump()
-                # 執行匯入
-                if info['action']['restore']['execute']:
+                        
+            # 執行匯入
+            if info['action']['restore']['execute']:
+                for item in info['action']['restore']['items']:
+                    database = item['database']
+                    collections = item['collections']
+                    if len(collections) == 0:
+                        continue
+
                     for collection in collections:
                         mt = MongoTool(
                             host=info['host'],

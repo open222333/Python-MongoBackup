@@ -45,9 +45,11 @@
       },
       "random": {
 		// 隨機資料 根據 old_collection_name1 建立 new_collection_name1
-        "old_collection_name1": {
-          "name": "new_collection_name1",
-          "amount": null // 指定抽取資料數量
+        "database_name": {
+          "old_collection_name1": {
+            "name": "new_collection_name1",
+            "amount": null
+          }
         }
       }
     }

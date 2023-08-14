@@ -31,9 +31,11 @@
         ]
       },
       "random": {
-        "old_collection_name1": {
-          "name": "new_collection_name1",
-          "amount": null
+        "database_name": {
+          "old_collection_name1": {
+            "name": "new_collection_name1",
+            "amount": null
+          }
         }
       }
     }
