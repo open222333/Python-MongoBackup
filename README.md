@@ -11,14 +11,18 @@
 // conf/mongo.json
 [
   {
-    "execute": true, // 是否執行
+    // 是否執行
+    "execute": true,
     "host": "",
     "action": {
       "dump": {
-		// 匯出 相關設定
-        "execute": false, // 是否執行
-		"hostname": "", // 若未指定 則顯示本機
-        "items": [	// 指定 資料庫 集合
+        // 匯出 相關設定
+        // 是否執行
+        "execute": false,
+        // 若未指定 則顯示本機
+        "hostname": "",
+        // 指定 資料庫 集合
+        "items": [
           {
             "database": "database1",
             "collections": [
@@ -28,13 +32,19 @@
         ]
       },
       "restore": {
-		// 匯入 相關設定
+        // 匯入 相關設定
+        // 若未指定 則顯示本機
         "execute": false,
-		"hostname": "", // 若未指定 則顯示本機
-        "date": "20230101", // 匯入指定日期(需存在)的備份檔
-		"drop_collection": false, // 匯入同時刪除目前同名稱集合
-        "clear_doc": false, // 匯入同時清除collection內所有文檔
-        "attach_date": false, // 匯入時 集合名稱附加日期
+        // 匯入時 指定匯入哪個主機資料
+        "hostname": "",
+        // 匯入指定日期(需存在)的備份檔
+        "date": "20230101",
+        // 匯入同時刪除目前同名稱集合
+        "drop_collection": false,
+        // 匯入同時清除collection內所有文檔
+        "clear_doc": false,
+        // 匯入時 集合名稱附加日期
+        "attach_date": false,
         "items": [
           {
             "database": "database1",
@@ -45,7 +55,9 @@
         ]
       },
       "random": {
-		// 隨機資料 根據 old_collection_name1 建立 new_collection_name1
+        // 隨機資料
+        // database_name 指定哪個資料庫
+        // 根據 old_collection_name1 建立 new_collection_name1
         "database_name": {
           "old_collection_name1": {
             "name": "new_collection_name1",
