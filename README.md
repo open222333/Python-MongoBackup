@@ -13,11 +13,11 @@
   {
     "execute": true, // 是否執行
     "host": "",
-    "hostname": "", // 若未指定 則顯示本機
     "action": {
       "dump": {
 		// 匯出 相關設定
         "execute": false, // 是否執行
+		"hostname": "", // 若未指定 則顯示本機
         "items": [	// 指定 資料庫 集合
           {
             "database": "database1",
@@ -30,6 +30,7 @@
       "restore": {
 		// 匯入 相關設定
         "execute": false,
+		"hostname": "", // 若未指定 則顯示本機
         "date": "20230101", // 匯入指定日期(需存在)的備份檔
 		"drop_collection": false, // 匯入同時刪除目前同名稱集合
         "clear_doc": false, // 匯入同時清除collection內所有文檔
