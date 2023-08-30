@@ -5,6 +5,28 @@ import socket
 import os
 
 
+'''
+; ******log設定******
+; 關閉log功能 輸入選項 (true, True, 1) 預設 不關閉
+; LOG_DISABLE=1
+
+; logs路徑 預設 logs
+; LOG_PATH=
+
+; 關閉紀錄log檔案 輸入選項 (true, True, 1)  預設 不關閉
+; LOG_FILE_DISABLE=1
+
+; 設定紀錄log等級 DEBUG,INFO,WARNING,ERROR,CRITICAL 預設WARNING
+; LOG_LEVEL=
+
+; 指定log大小(輸入數字) 單位byte, 與 LOG_DAYS 只能輸入一項 若都輸入 LOG_SIZE優先
+; LOG_SIZE=
+
+; 指定保留log天數(輸入數字) 預設7
+; LOG_DAYS=
+'''
+
+
 class Log():
 
     def __init__(self, log_name: str = None) -> None:
@@ -86,7 +108,8 @@ class Log():
         handler = TimedRotatingFileHandler(self.log_file, when=when, backupCount=amount)
         handler.namer = my_namer
         handler.setFormatter(self.formatter)
-        self.logger.addHandler(handler)
+        if self.has_handler(handler) == False:
+            self.logger.addHandler(handler)
 
     def set_file_handler(self, size: int = 1 * 1024 * 1024, file_amount: int = 1) -> RotatingFileHandler:
         """設置log檔案大小限制
@@ -108,7 +131,8 @@ class Log():
         self.log_file = os.path.join(self.log_path, f'{self.logfile_name}')
         handler = RotatingFileHandler(self.log_file, maxBytes=size, backupCount=file_amount)
         handler.setFormatter(self.formatter)
-        self.logger.addHandler(handler)
+        if self.has_handler(handler) == False:
+            self.logger.addHandler(handler)
 
     def set_msg_handler(self) -> logging.StreamHandler:
         """設置log steam
@@ -118,7 +142,8 @@ class Log():
         """
         handler = logging.StreamHandler()
         handler.setFormatter(self.formatter)
-        self.logger.addHandler(handler)
+        if self.has_handler(handler) == False:
+            self.logger.addHandler(handler)
 
     def set_log_formatter(self, formatter: str):
         """設置log格式 formatter
@@ -146,6 +171,20 @@ class Log():
             self.logger.setLevel(logging.ERROR)
         elif level == 'CRITICAL':
             self.logger.setLevel(logging.CRITICAL)
+
+    def has_handler(self, handler):
+        """是否 已存在handler
+
+        Args:
+            handler (_type_): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        for h in self.logger.handlers:
+            if isinstance(h, type(handler)):
+                return True
+        return False
 
     def disable_log(self):
         """關閉log
