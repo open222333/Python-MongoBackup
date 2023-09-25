@@ -21,13 +21,13 @@ if __name__ == "__main__":
             # 執行匯出
             if info['action']['dump']['execute']:
 
-                if info['dump']['host']:
-                    host = info['resdumptore']['host']
+                if info['action']['dump']['host']:
+                    host = info['action']['resdumptore']['host']
                 else:
                     host = '127.0.0.1'
 
-                if info['dump']['port']:
-                    port = info['dump']['port']
+                if info['action']['dump']['port']:
+                    port = info['action']['dump']['port']
                 else:
                     port = '27017'
 
@@ -53,13 +53,13 @@ if __name__ == "__main__":
             # 執行匯入
             if info['action']['restore']['execute']:
 
-                if info['restore']['host']:
-                    host = info['restore']['host']
+                if info['action']['restore']['host']:
+                    host = info['action']['restore']['host']
                 else:
                     host = '127.0.0.1'
 
-                if info['restore']['port']:
-                    port = info['restore']['port']
+                if info['action']['restore']['port']:
+                    port = info['action']['restore']['port']
                 else:
                     port = '27017'
 
