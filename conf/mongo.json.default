@@ -1,10 +1,11 @@
 [
   {
     "execute": true,
-    "host": "",
     "action": {
       "dump": {
         "execute": false,
+        "host": null,
+        "port": null,
         "hostname": null,
         "items": [
           {
@@ -17,8 +18,10 @@
       },
       "restore": {
         "execute": false,
-        "date": "20230101",
+        "host": null,
+        "port": null,
         "hostname": null,
+        "date": "20230101",
         "drop_collection": false,
         "clear_doc": false,
         "attach_date": false,

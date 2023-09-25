@@ -13,14 +13,17 @@
   {
     // 是否執行
     "execute": true,
-    "host": "",
     "action": {
       "dump": {
         // 匯出 相關設定
         // 是否執行
         "execute": false,
+        // 預設 127.0.0.1
+        "host": null,
+        // 預設 27017
+        "port": null,
         // 若未指定 則顯示本機
-        "hostname": "",
+        "hostname": null,
         // 指定 資料庫 集合
         "items": [
           {
@@ -35,6 +38,10 @@
         // 匯入 相關設定
         // 若未指定 則顯示本機
         "execute": false,
+        // 預設 127.0.0.1
+        "host": null,
+        // 預設 27017
+        "port": null,
         // 匯入時 指定匯入哪個主機資料
         "hostname": "",
         // 匯入指定日期(需存在)的備份檔

@@ -17,9 +17,19 @@ args = parser.parse_args()
 if __name__ == "__main__":
     for info in MONGO_INFO:
         if info['execute']:
-            host = info['host']
+
             # 執行匯出
             if info['action']['dump']['execute']:
+
+                if info['dump']['host']:
+                    host = info['resdumptore']['host']
+                else:
+                    host = '127.0.0.1'
+
+                if info['dump']['port']:
+                    port = info['dump']['port']
+                else:
+                    port = '27017'
 
                 if info['action']['dump']['hostname']:
                     hostname = info['hostname']
@@ -33,7 +43,7 @@ if __name__ == "__main__":
                         continue
                     for collection in collections:
                         mt = MongoTool(
-                            host=info['host'],
+                            host=f'{host}:{port}',
                             database=database,
                             collection=collection,
                             dir_path=os.path.join(OUTPUT_DIR, hostname)
@@ -42,6 +52,17 @@ if __name__ == "__main__":
 
             # 執行匯入
             if info['action']['restore']['execute']:
+
+                if info['restore']['host']:
+                    host = info['restore']['host']
+                else:
+                    host = '127.0.0.1'
+
+                if info['restore']['port']:
+                    port = info['restore']['port']
+                else:
+                    port = '27017'
+
                 for item in info['action']['restore']['items']:
                     database = item['database']
                     collections = item['collections']
@@ -56,7 +77,7 @@ if __name__ == "__main__":
 
                     for collection in collections:
                         mt = MongoTool(
-                            host=info['host'],
+                            host=f'{host}:{port}',
                             database=database,
                             collection=collection,
                             dir_path=os.path.join(OUTPUT_DIR, hostname)
