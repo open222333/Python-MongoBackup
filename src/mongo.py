@@ -26,6 +26,9 @@ class MongoTool():
         self.collection = collection
         self.dir_path = dir_path
 
+        self.username = None
+        self.password = None
+
         if date:
             self.date = date
         else:
@@ -51,6 +54,35 @@ class MongoTool():
             date (str): 20230101
         """
         self.date = date
+
+    def set_auth(self, username: str, password: str, database: str = 'admin'):
+        """設置驗證資料
+
+        Args:
+            username (str): 用戶名
+            password (str): 密碼
+            database (str): 驗證資料庫 預設值
+        """
+        self.username = username
+        self.password = password
+        self.auth_database = database
+
+    def list_convert_str(self, strs: list):
+        """將串列轉成字串
+
+        Args:
+            strs (list): _description_
+
+        Returns:
+            _type_: _description_
+        """
+        string = ''
+        for i in range(len(strs)):
+            if i != len(strs) - 1:
+                string += f'{strs[i]} '
+            else:
+                string += strs[i]
+        return string
 
     def get_lastst_date(self, path: str) -> Union[dict, None]:
         """取得最新日期的資料夾名稱
@@ -81,8 +113,17 @@ class MongoTool():
             bool: _description_
         """
         mongo_logger.info(f'匯出  {self.database} {self.collection} 至 {self.backup_dir_path}')
-        command = f'mongodump --quiet -h {self.host} -d {self.database} -c {self.collection} -o {self.backup_dir_path}'
-        mongo_logger.debug(f'指令:\n{command}')
+        command = ['mongodump', '--quiet', f'-h {self.host}', f'-d {self.database}']
+        if self.username != None and self.password != None:
+            command.append(f'-u {self.username}')
+            command.append(f'-p {self.password}')
+            command.append(f'--authenticationDatabase {self.auth_database}')
+        command.append(f'-c {self.collection}')
+        command.append(f'-o {self.backup_dir_path}')
+
+        command = self.list_convert_str(command)
+        mongo_logger.debug(command)
+
         try:
             result = subprocess.run(command, shell=True, capture_output=True, text=True)
             if result.returncode == 0:
@@ -104,13 +145,26 @@ class MongoTool():
             _type_: _description_
         """
         bson_file = f'{self.backup_dir_path}/{self.database}/{self.collection}.bson'
+
+        command = ['mongorestore', f'-h {self.host}', f'-d {self.database}']
         if name:
             mongo_logger.info(f'匯入 {bson_file} 至 {self.database} {name}')
-            command = f'mongorestore -h {self.host} -d {self.database} -c {name} {bson_file}'
+            command.append(f'-c {name}')
+            if self.username != None and self.password != None:
+                command.append(f'-u {self.username}')
+                command.append(f'-p {self.password}')
+                command.append(f'--authenticationDatabase {self.auth_database}')
+            command.append(bson_file)
         else:
             mongo_logger.info(f'匯入 {bson_file} 至 {self.database} {self.collection}')
-            command = f'mongorestore -h {self.host} -d {self.database} -c {self.collection} {bson_file}'
+            command.append(f'-c {self.collection}')
+            if self.username != None and self.password != None:
+                command.append(f'-u {self.username}')
+                command.append(f'-p {self.password}')
+                command.append(f'--authenticationDatabase {self.auth_database}')
+            command.append(bson_file)
 
+        command = self.list_convert_str(command)
         try:
             if os.path.exists(bson_file):
                 mongo_logger.debug(f'指令\n{command}')

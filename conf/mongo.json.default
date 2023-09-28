@@ -1,11 +1,13 @@
 [
   {
-    "execute": true,
+    "execute": false,
     "action": {
       "dump": {
         "execute": false,
         "host": null,
         "port": null,
+        "username": null,
+        "password": null,
         "hostname": null,
         "items": [
           {
@@ -20,6 +22,8 @@
         "execute": false,
         "host": null,
         "port": null,
+        "username": null,
+        "password": null,
         "hostname": null,
         "date": "20230101",
         "drop_collection": false,

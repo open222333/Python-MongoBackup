@@ -22,7 +22,7 @@ if __name__ == "__main__":
             if info['action']['dump']['execute']:
 
                 if info['action']['dump']['host']:
-                    host = info['action']['resdumptore']['host']
+                    host = info['action']['dump']['host']
                 else:
                     host = '127.0.0.1'
 
@@ -31,8 +31,11 @@ if __name__ == "__main__":
                 else:
                     port = '27017'
 
+                username = info['action']['dump']['username']
+                password = info['action']['dump']['password']
+
                 if info['action']['dump']['hostname']:
-                    hostname = info['hostname']
+                    hostname = info['action']['dump']['hostname']
                 else:
                     hostname = socket.gethostname()
 
@@ -48,6 +51,8 @@ if __name__ == "__main__":
                             collection=collection,
                             dir_path=os.path.join(OUTPUT_DIR, hostname)
                         )
+                        if username and password:
+                            mt.set_auth(username, password)
                         mt.dump()
 
             # 執行匯入
@@ -62,6 +67,9 @@ if __name__ == "__main__":
                     port = info['action']['restore']['port']
                 else:
                     port = '27017'
+
+                username = info['action']['restore']['username']
+                password = info['action']['restore']['password']
 
                 for item in info['action']['restore']['items']:
                     database = item['database']
@@ -82,6 +90,8 @@ if __name__ == "__main__":
                             collection=collection,
                             dir_path=os.path.join(OUTPUT_DIR, hostname)
                         )
+                        if username and password:
+                            mt.set_auth(username, password)
                         # 刪除目前的集合
                         if info['action']['restore']['drop_collection']:
                             mt.drop_collection()
