@@ -54,6 +54,7 @@ class MongoTool():
             date (str): 20230101
         """
         self.date = date
+        self.backup_dir_path = f'{self.dir_path}/{self.date}'
 
     def set_auth(self, username: str, password: str, database: str = 'admin'):
         """設置驗證資料
