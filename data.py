@@ -47,27 +47,28 @@ if __name__ == "__main__":
     if args.json:
         for info in MONGO_INFO:
             if info['execute']:
-                for database, items in info['action']['random'].items():
-                    for collection, item in items.items():
-                        threads = []
-                        kwargs = {
-                            "host": info['host'],
-                            "database": database,
-                            "collection": collection,
-                            "new_collection": item['name']
-                        }
-                        if item['amount']:
-                            kwargs['amount'] = item['amount']
-                        thread = Thread(
-                            target=run,
-                            kwargs=kwargs
-                        )
-                        threads.append(thread)
-                        thread.start()
+                if info['action'].get('random'):
+                    for database, items in info['action']['random'].items():
+                        for collection, item in items.items():
+                            threads = []
+                            kwargs = {
+                                "host": info['host'],
+                                "database": database,
+                                "collection": collection,
+                                "new_collection": item['name']
+                            }
+                            if item['amount']:
+                                kwargs['amount'] = item['amount']
+                            thread = Thread(
+                                target=run,
+                                kwargs=kwargs
+                            )
+                            threads.append(thread)
+                            thread.start()
 
-                    # 等待所有執行緒結束
-                    for thread in threads:
-                        thread.join()
+                        # 等待所有執行緒結束
+                        for thread in threads:
+                            thread.join()
     else:
         run(
             host=args.host,
