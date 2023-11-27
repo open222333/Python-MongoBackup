@@ -16,28 +16,25 @@ args = parser.parse_args()
 
 if __name__ == "__main__":
     for info in MONGO_INFO:
-        if info['execute']:
+        if info.get('execute'):
 
             # 執行匯出
             if info['action'].get('dump'):
-                if info['action']['dump']['execute']:
+                if info['action']['dump'].get('execute'):
 
-                    if info['action']['dump']['host']:
-                        host = info['action']['dump']['host']
-                    else:
+                    host = info['action']['dump'].get('host')
+                    if host == None:
                         host = '127.0.0.1'
 
-                    if info['action']['dump']['port']:
-                        port = info['action']['dump']['port']
-                    else:
+                    port = info['action']['dump'].get('port')
+                    if port == None:
                         port = '27017'
 
-                    username = info['action']['dump']['username']
-                    password = info['action']['dump']['password']
+                    username = info['action']['dump'].get('username')
+                    password = info['action']['dump'].get('password')
 
-                    if info['action']['dump']['hostname']:
-                        hostname = info['action']['dump']['hostname']
-                    else:
+                    hostname = info['action']['dump'].get('hostname')
+                    if hostname == None:
                         hostname = socket.gethostname()
 
                     for item in info['action']['dump']['items']:
@@ -58,29 +55,26 @@ if __name__ == "__main__":
 
             # 執行匯入
             if info['action'].get('restore'):
-                if info['action']['restore']['execute']:
+                if info['action']['restore'].get('execute'):
 
-                    if info['action']['restore']['host']:
-                        host = info['action']['restore']['host']
-                    else:
+                    host = info['action']['restore'].get('host')
+                    if host == None:
                         host = '127.0.0.1'
 
-                    if info['action']['restore']['port']:
-                        port = info['action']['restore']['port']
-                    else:
+                    port = info['action']['restore'].get('port')
+                    if port == None:
                         port = '27017'
 
-                    username = info['action']['restore']['username']
-                    password = info['action']['restore']['password']
+                    username = info['action']['restore'].get('username')
+                    password = info['action']['restore'].get('password')
+
+                    hostname = info['action']['restore'].get('hostname')
+                    if hostname == None:
+                        hostname = socket.gethostname()
 
                     for item in info['action']['restore']['items']:
                         database = item['database']
                         collections = item['collections']
-
-                        if info['action']['restore']['hostname']:
-                            hostname = info['action']['restore']['hostname']
-                        else:
-                            hostname = socket.gethostname()
 
                         if len(collections) == 0:
                             continue
@@ -92,22 +86,26 @@ if __name__ == "__main__":
                                 collection=collection,
                                 dir_path=os.path.join(OUTPUT_DIR, hostname)
                             )
+                            
                             if username and password:
                                 mt.set_auth(username, password)
+
                             # 刪除目前的集合
-                            if info['action']['restore']['drop_collection']:
+                            if info['action']['restore'].get('drop_collection'):
                                 mt.drop_collection()
 
-                            if info['action']['restore']['date']:
+                            # 指定日期
+                            if info['action']['restore'].get('date'):
                                 mt.set_date(date=info['action']['restore']['date'])
+
                             # 集合名稱不帶日期
-                            if info['action']['restore']['attach_date']:
+                            if info['action']['restore'].get('attach_date'):
                                 mt.restore(name=f'{collection}_{mt.date}')
                             else:
                                 mt.restore()
 
                         # 清空集合資料
-                        if info['action']['restore']['clear_doc']:
+                        if info['action']['restore'].get('clear_doc'):
                             if len(collections) != 0:
                                 for collection in collections:
                                     mt.delete_all_document()
