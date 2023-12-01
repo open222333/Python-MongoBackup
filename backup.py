@@ -1,6 +1,6 @@
 from argparse import ArgumentParser
 from src import MONGO_INFO, OUTPUT_DIR
-from src.mongo import MongoTool
+from src.mongo import MongoTool, MongoMappingCollections
 import socket
 import os
 
@@ -40,8 +40,13 @@ if __name__ == "__main__":
                     for item in info['action']['dump']['items']:
                         database = item['database']
                         collections = item['collections']
+
+                        # 若沒指定 collections 則預設全部
                         if len(collections) == 0:
-                            continue
+                            mmc = MongoMappingCollections(f'{host}:{port}')
+                            mmc.set_databases(database)
+                            collections = mmc.get_all_collections()[database]
+
                         for collection in collections:
                             mt = MongoTool(
                                 host=f'{host}:{port}',
@@ -77,7 +82,9 @@ if __name__ == "__main__":
                         collections = item['collections']
 
                         if len(collections) == 0:
-                            continue
+                            mmc = MongoMappingCollections(f'{host}:{port}')
+                            mmc.set_databases(database)
+                            collections = mmc.get_all_collections()[database]
 
                         for collection in collections:
                             mt = MongoTool(
@@ -86,7 +93,7 @@ if __name__ == "__main__":
                                 collection=collection,
                                 dir_path=os.path.join(OUTPUT_DIR, hostname)
                             )
-                            
+
                             if username and password:
                                 mt.set_auth(username, password)
 
