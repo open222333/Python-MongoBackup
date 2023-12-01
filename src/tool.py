@@ -36,3 +36,24 @@ def get_all_files(dir_path, extensions=None):
     target_file_path.sort()
     return target_file_path
 
+
+def parse_db_collections(path):
+    """解析 資料夾內容取得備份下來的 db collections
+
+    Args:
+        path (_type_): _description_
+
+    Returns:
+        { 'dbname' : [collection1, ... ]}
+    """
+    items = {}
+    all_files = get_all_files(path, ['bson'])
+    for file in all_files:
+        dirname = os.path.basename(os.path.dirname(file))
+        file, _ = os.path.splitext(os.path.basename(file))
+
+        if dirname not in items.keys():
+            items[dirname] = [file]
+        else:
+            items[dirname].append(file)
+    return items

@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 from src import MONGO_INFO, OUTPUT_DIR
 from src.mongo import MongoTool, MongoMappingCollections
+from src.tool import parse_db_collections
 import socket
 import os
 
@@ -82,9 +83,10 @@ if __name__ == "__main__":
                         collections = item.get('collections', [])
 
                         if len(collections) == 0:
-                            mmc = MongoMappingCollections(f'{host}:{port}')
-                            mmc.set_databases(database)
-                            collections = mmc.get_all_collections()[database]
+                            if item.get('dirpath'):
+                                collections = parse_db_collections(item.get('dirpath'))[database]
+                            else:
+                                continue
 
                         for collection in collections:
                             mt = MongoTool(

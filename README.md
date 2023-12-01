@@ -58,7 +58,8 @@
             "database": "database1",
             "collections": [
               "collection1"
-            ]
+            ],
+            "dirpath": "" // 路徑 可替代 collections(不填寫 collections) 解析匯出的資料夾路徑架構 生成可匯入格式
           }
         ]
       },
