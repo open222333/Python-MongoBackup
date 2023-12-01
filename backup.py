@@ -39,7 +39,7 @@ if __name__ == "__main__":
 
                     for item in info['action']['dump']['items']:
                         database = item['database']
-                        collections = item['collections']
+                        collections = item.get('collections', [])
 
                         # 若沒指定 collections 則預設全部
                         if len(collections) == 0:
@@ -79,7 +79,7 @@ if __name__ == "__main__":
 
                     for item in info['action']['restore']['items']:
                         database = item['database']
-                        collections = item['collections']
+                        collections = item.get('collections', [])
 
                         if len(collections) == 0:
                             mmc = MongoMappingCollections(f'{host}:{port}')
