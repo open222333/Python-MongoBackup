@@ -3,7 +3,6 @@
     "execute": false,
     "action": {
       "dump": {
-        "execute": false,
         "host": null,
         "port": null,
         "username": null,
@@ -19,7 +18,6 @@
         ]
       },
       "restore": {
-        "execute": false,
         "host": null,
         "port": null,
         "username": null,

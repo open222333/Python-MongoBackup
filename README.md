@@ -17,8 +17,6 @@
       // 不需要則清除動作
       "dump": {
         // 匯出 相關設定
-        // 是否執行
-        "execute": false,
         // 預設 127.0.0.1
         "host": null,
         // 預設 27017
@@ -38,7 +36,6 @@
       "restore": {
         // 匯入 相關設定
         // 若未指定 則顯示本機
-        "execute": false,
         // 預設 127.0.0.1
         "host": null,
         // 預設 27017
@@ -58,7 +55,8 @@
             "database": "database1",
             "collections": [
               "collection1"
-            ]
+            ],
+            "dirpath": "" // 路徑 可替代 collections(不填寫 collections) 解析匯出的資料夾路徑架構 生成可匯入格式
           }
         ]
       },
