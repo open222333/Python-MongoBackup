@@ -3,6 +3,7 @@ from src import MONGO_INFO, OUTPUT_DIR
 from src.mongo import MongoTool, MongoMappingCollections
 from src.tool import parse_db_collections
 import socket
+import json
 import os
 
 '''
@@ -13,7 +14,13 @@ import os
 
 
 parser = ArgumentParser(description='批量mongodb備份 - 匯出匯入 預設根據 conf/mongo.json 設定執行')
+json_path = parser.add_argument('-j', '--json_path', default=None, help='json檔路徑, 預設 ./conf/mongo.json')
 args = parser.parse_args()
+
+if args.json_path != None:
+    if os.path.exists(args.json_path):
+        with open(args.json_path, 'r') as f:
+            MONGO_INFO = json.loads(f.read())
 
 if __name__ == "__main__":
     for info in MONGO_INFO:
