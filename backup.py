@@ -2,6 +2,7 @@ from argparse import ArgumentParser
 from src import MONGO_INFO, OUTPUT_DIR
 from src.mongo import MongoTool, MongoMappingCollections
 from src.tool import parse_db_collections
+import textwrap
 import socket
 import json
 import os
@@ -14,7 +15,40 @@ import os
 
 
 parser = ArgumentParser(description='批量mongodb備份 - 匯出匯入 預設根據 conf/mongo.json 設定執行')
-json_path = parser.add_argument('-j', '--json_path', default=None, help='json檔路徑, 預設 ./conf/mongo.json')
+json_path = parser.add_argument('-j', '--json_path', default=None,
+        help='json檔路徑, 預設 ./conf/mongo.json\nJSON 設定檔路徑，請依照以下格式：\n' + textwrap.dedent("""
+            [
+              {
+                "execute": true,
+                "action": {
+                  "dump": {
+                    "host": "127.0.0.1",
+                    "port": "27017",
+                    "username": "your_user",
+                    "password": "your_pass",
+                    "items": [
+                      {
+                        "database": "your_db",
+                        "collections": ["col1", "col2"]
+                      }
+                    ]
+                  },
+                  "restore": {
+                    "drop_collection": true,
+                    "date": "20240508",
+                    "attach_date": true,
+                    "items": [
+                      {
+                        "database": "your_db",
+                        "dirpath": "/path/to/backup"
+                      }
+                    ]
+                  }
+                }
+              }
+            ]
+        """)
+    )
 args = parser.parse_args()
 
 if args.json_path != None:
