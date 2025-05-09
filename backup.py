@@ -1,7 +1,8 @@
 from argparse import ArgumentParser
-from src import MONGO_INFO, OUTPUT_DIR
+from src import MONGO_INFO, OUTPUT_DIR, LOG_LEVEL, LOG_FILE_DISABLE
 from src.mongo import MongoTool, MongoMappingCollections
 from src.tool import parse_db_collections
+from src.logger import Log
 import textwrap
 import socket
 import json
@@ -51,8 +52,16 @@ json_path = parser.add_argument('-j', '--json_path', default=None,
     )
 args = parser.parse_args()
 
+backup_logger = Log('BACKUP')
+if LOG_LEVEL:
+    backup_logger.set_level(LOG_LEVEL)
+if not LOG_FILE_DISABLE:
+    backup_logger.set_date_handler()
+backup_logger.set_msg_handler()
+
 if args.json_path != None:
     if os.path.exists(args.json_path):
+        backup_logger.info(f'使用 json_path: {args.json_path}')
         with open(args.json_path, 'r') as f:
             MONGO_INFO = json.loads(f.read())
 
@@ -62,7 +71,7 @@ if __name__ == "__main__":
 
             # 執行匯出
             if info['action'].get('dump'):
-
+                backup_logger.info('執行匯出')
                 host = info['action']['dump'].get('host')
                 if host == None:
                     host = '127.0.0.1'
@@ -84,11 +93,13 @@ if __name__ == "__main__":
 
                     # 若沒指定 collections 則預設全部
                     if len(collections) == 0:
+                        backup_logger.info(f'匯出資料庫: {database}，集合: {collections}')
                         mmc = MongoMappingCollections(f'{host}:{port}')
                         mmc.set_databases(database)
                         collections = mmc.get_all_collections()[database]
 
                     for collection in collections:
+                        backup_logger.info(f'匯出資料庫: {database}，集合: {collection}')
                         mt = MongoTool(
                             host=f'{host}:{port}',
                             database=database,
@@ -101,6 +112,8 @@ if __name__ == "__main__":
 
             # 執行匯入
             if info['action'].get('restore'):
+
+                backup_logger.info('執行匯入')
                 host = info['action']['restore'].get('host')
                 if host == None:
                     host = '127.0.0.1'
@@ -122,11 +135,14 @@ if __name__ == "__main__":
 
                     if len(collections) == 0:
                         if item.get('dirpath'):
+                            # 取得資料夾內的集合
                             collections = parse_db_collections(item.get('dirpath'))[database]
+                            backup_logger.info(f'匯入資料庫: {database}，集合: {collections}')
                         else:
                             continue
 
                     for collection in collections:
+                        backup_logger.info(f'匯入資料庫: {database}，集合: {collection}')
                         mt = MongoTool(
                             host=f'{host}:{port}',
                             database=database,
@@ -139,20 +155,25 @@ if __name__ == "__main__":
 
                         # 刪除目前的集合
                         if info['action']['restore'].get('drop_collection'):
+                            backup_logger.info(f'刪除集合: {collection}')
                             mt.drop_collection()
 
                         # 指定日期
                         if info['action']['restore'].get('date'):
+                            backup_logger.info(f'指定日期: {info["action"]["restore"]["date"]}')
                             mt.set_date(date=info['action']['restore']['date'])
 
                         # 集合名稱不帶日期
                         if info['action']['restore'].get('attach_date'):
+                            backup_logger.info(f'集合名稱不帶日期')
                             mt.restore(name=f'{collection}_{mt.date}')
                         else:
                             mt.restore()
 
                     # 清空集合資料
                     if info['action']['restore'].get('clear_doc'):
+                        backup_logger.info(f'清空集合資料: {collection}')
                         if len(collections) != 0:
                             for collection in collections:
                                 mt.delete_all_document()
+    backup_logger.info('備份還原完成')

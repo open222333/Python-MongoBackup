@@ -116,8 +116,7 @@ class MongoTool():
         """
         self.set_date(date=datetime.now().__format__('%Y%m%d'))
 
-        mongo_logger.info(
-            f'匯出  {self.database} {self.collection} 至 {self.backup_dir_path}')
+        mongo_logger.info(f'匯出  {self.database} {self.collection} 至 {self.backup_dir_path}')
         command = ['mongodump', '--quiet',
                    f'-h {self.host}', f'-d {self.database}']
         if self.username != None and self.password != None:
@@ -180,27 +179,23 @@ class MongoTool():
             if self.username != None and self.password != None:
                 command.append(f'-u {self.username}')
                 command.append(f'-p {self.password}')
-                command.append(
-                    f'--authenticationDatabase {self.auth_database}')
+                command.append(f'--authenticationDatabase {self.auth_database}')
             command.append(bson_file)
         else:
-            mongo_logger.info(
-                f'匯入 {bson_file} 至 {self.database} {self.collection}')
+            mongo_logger.info(f'匯入 {bson_file} 至 {self.database} {self.collection}')
             command.append(f'-c {self.collection}')
             if self.username != None and self.password != None:
                 command.append(f'-u {self.username}')
                 command.append(f'-p {self.password}')
-                command.append(
-                    f'--authenticationDatabase {self.auth_database}')
+                command.append(f'--authenticationDatabase {self.auth_database}')
             command.append(bson_file)
 
         command = self.list_convert_str(command)
-        
+
         try:
             if os.path.exists(bson_file):
                 mongo_logger.debug(f'指令\n{command}')
-                result = subprocess.run(
-                    command, shell=True, capture_output=True, text=True)
+                result = subprocess.run(command, shell=True, capture_output=True, text=True)
                 if result.returncode == 0:
                     mongo_logger.debug(f'結果:\n{result.stderr}')
                 else:
