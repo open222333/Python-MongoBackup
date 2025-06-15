@@ -130,12 +130,13 @@ class MongoTool():
         mongo_logger.debug(command)
 
         try:
-            result = subprocess.run(
-                command, shell=True, capture_output=True, text=True)
+            result = subprocess.run(command, shell=True, capture_output=True, text=True)
             if result.returncode == 0:
-                mongo_logger.debug(f'結果:\n{result.stderr}')
+                # mongo_logger.debug(f'結果:\n{result.stderr}')
+                pass
             else:
-                mongo_logger.error(f'錯誤:\n{result.stderr}')
+                mongo_logger.error(f'匯出失敗:\n{result.stderr}')
+                # mongo_logger.error(f'錯誤:\n{result.stderr}')
         except Exception as err:
             mongo_logger.error(err, exc_info=True)
             return False
