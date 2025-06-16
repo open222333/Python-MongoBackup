@@ -2,12 +2,11 @@ from .logger import Log
 from . import LOG_LEVEL
 import os
 
-
-logger = Log()
+logger = Log(log_name='TOOL')
 if LOG_LEVEL:
     logger.set_level(LOG_LEVEL)
 
-logger.set_date_handler()
+# logger.set_date_handler()
 logger.set_msg_handler()
 
 
@@ -58,68 +57,94 @@ def parse_db_collections(path):
             items[dirname].append(file)
     return items
 
+
 def print_config(config):
     """列印配置說明
     Args:
         config (list): 配置列表
     """
     for i, task in enumerate(config, 1):
-        print(f"\n🔧 任務 {i}")
-        print(f"👉 是否執行: {'是' if task['execute'] else '否'}")
+        logger.info(f"===================")
+        logger.info(f"🔧 任務 {i}")
+        logger.info(f"👉 是否執行: {'是' if task['execute'] else '否'}")
 
         # dump 說明
-        dump = task['action']['dump']
-        print("\n📤 匯出 (Dump):")
-        if dump.get("items"):
-            for item in dump["items"]:
-                db = item.get("database")
-                cols = item.get("collections", [])
-                if db and cols:
-                    print(f"  - 資料庫: {db}")
-                    print(f"    匯出集合: {', '.join(cols)}")
-                else:
-                    print("  ❗ 資料庫名稱或集合為空，請檢查 dump 設定")
+        logger.info("📤 匯出 (Dump):")
+        if "dump" not in task["action"]:
+            logger.info("  ❗ 未設定 dump 動作")
         else:
-            print("  ❗ 未設定任何要匯出的資料庫或集合")
+            dump = task['action']['dump']
+            if dump.get("items"):
+                for item in dump["items"]:
+                    db = item.get("database")
+                    cols = item.get("collections", [])
+                    if db and cols:
+                        logger.info(f"  - 資料庫: {db}")
+                        logger.info(f"    匯出集合: {', '.join(cols)}")
+                    else:
+                        logger.info("  ❗ 資料庫名稱或集合為空，請檢查 dump 設定")
+            else:
+                logger.info("  ❗ 未設定任何要匯出的資料庫或集合")
 
         # restore 說明
-        restore = task["action"]["restore"]
-        print("\n📥 還原 (Restore):")
-        print(f"  - 還原日期: {restore.get('date', '未設定')}")
-        print(f"  - 是否刪除原集合: {'是' if restore.get('drop_collection') else '否'}")
-        print(f"  - 是否清空文件再導入: {'是' if restore.get('clear_doc') else '否'}")
-        print(f"  - 是否附加日期欄位: {'是' if restore.get('attach_date') else '否'}")
-        if restore.get("items"):
-            for item in restore["items"]:
-                db = item.get("database")
-                cols = item.get("collections", [])
-                if db and cols:
-                    print(f"  - 資料庫: {db}")
-                    print(f"    還原集合: {', '.join(cols)}")
-                else:
-                    print("  ❗ 資料庫名稱或集合為空，請檢查 restore 設定")
+        logger.info("📥 還原 (Restore):")
+        if "restore" not in task["action"]:
+            logger.info("  ❗ 未設定 restore 動作")
         else:
-            print("  ❗ 未設定任何要還原的資料庫或集合")
+            restore = task["action"]["restore"]
+            logger.info(f"  - 還原日期: {restore.get('date', '未設定')}")
+            logger.info(
+                f"  - 是否刪除原集合: {'是' if restore.get('drop_collection') else '否'}")
+            logger.info(
+                f"  - 是否清空文件再導入: {'是' if restore.get('clear_doc') else '否'}")
+            logger.info(
+                f"  - 是否附加日期欄位: {'是' if restore.get('attach_date') else '否'}")
+
+            if restore.get("items"):
+                for item in restore["items"]:
+                    db = item.get("database")
+                    cols = item.get("collections", [])
+                    if db and cols:
+                        logger.info(f"  - 資料庫: {db}")
+                        logger.info(f"    還原集合: {', '.join(cols)}")
+                    else:
+                        logger.info("  ❗ 資料庫名稱或集合為空，請檢查 restore 設定")
+            else:
+                logger.info("  ❗ 未設定任何要還原的資料庫或集合")
 
         # random 說明
-        print("\n🎲 隨機抽樣/重新命名 (Random):")
+        logger.info("🎲 隨機抽樣/重新命名 (Random):")
         random = task["action"].get("random", {})
         if not random:
-            print("  ❗ 未設定 random 內容")
+            logger.info("  ❗ 未設定 random 內容")
         else:
             for db_name, collections in random.items():
                 if not collections:
-                    print(f"  - 資料庫: {db_name} ❗ 無任何集合設定")
+                    logger.info(f"  - 資料庫: {db_name} ❗ 無任何集合設定")
                     continue
-                print(f"  - 資料庫: {db_name}")
+                logger.info(f"  - 資料庫: {db_name}")
                 for old_name, info in collections.items():
                     new_name = info.get("name")
                     amount = info.get("amount")
                     if not new_name:
-                        print(f"    集合「{old_name}」 ❗ 未設定新名稱")
+                        logger.info(f"    集合「{old_name}」 ❗ 未設定新名稱")
                     else:
-                        print(f"    集合「{old_name}」 → 新名稱: 「{new_name}」")
+                        logger.info(f"    集合「{old_name}」 → 新名稱: 「{new_name}」")
                     if amount:
-                        print(f"      抽樣數量: {amount}")
+                        logger.info(f"      抽樣數量: {amount}")
                     else:
-                        print("      （未設定抽樣數量，預設導入全部）")
+                        logger.info("      （未設定抽樣數量，預設導入全部）")
+    logger.info(f"===================")
+
+
+def wait_for_user_confirmation():
+    while True:
+        choice = input("🟡 是否繼續執行？(Y/N，預設為 N)：").strip().lower()
+        if choice == "y":
+            print("✅ 繼續執行...\n")
+            break
+        elif choice == "n" or choice == "":
+            print("🛑 使用者選擇中斷，程式終止。")
+            exit(0)
+        else:
+            print("⚠️ 無效輸入，請輸入 Y 或 N（Enter 預設為 N）。")

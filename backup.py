@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 from src import MONGO_INFO, OUTPUT_DIR, LOG_LEVEL, LOG_FILE_DISABLE
 from src.mongo import MongoTool, MongoMappingCollections
-from src.tool import parse_db_collections, print_config
+from src.tool import parse_db_collections, print_config, wait_for_user_confirmation
 from src.logger import Log
 import textwrap
 import socket
@@ -68,6 +68,8 @@ if args.json_path != None:
 if __name__ == "__main__":
 
     print_config(MONGO_INFO)
+
+    wait_for_user_confirmation()
 
     for info in MONGO_INFO:
         if info.get('execute'):
