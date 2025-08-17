@@ -1,5 +1,7 @@
 from .logger import Log
-from . import LOG_LEVEL
+from . import LOG_LEVEL, OUTPUT_DIR
+from datetime import datetime
+import socket
 import os
 
 logger = Log(log_name='TOOL')
@@ -8,6 +10,29 @@ if LOG_LEVEL:
 
 # logger.set_date_handler()
 logger.set_msg_handler()
+
+
+def get_lastst_date(path: str):
+    """取得最新日期的資料夾名稱
+
+    檔名格式 = '%Y%m%d'
+
+    Args:
+        path (str): 目標資料夾
+
+    Returns:
+        Union[dict, None]: _description_
+    """
+    date_dirs = os.listdir(path)
+    format_date = '%Y%m%d'
+    stock = {}
+    for date in date_dirs:
+        try:
+            stock[datetime.strptime(date, format_date)] = date
+        except Exception as err:
+            logger.error(err, exc_info=True)
+            return None
+    return stock[max(stock.keys())]
 
 
 def get_all_files(dir_path, extensions=None):
@@ -63,6 +88,8 @@ def print_config(config):
     Args:
         config (list): 配置列表
     """
+    dump_collections = {}
+
     for i, task in enumerate(config, 1):
         logger.info(f"===================")
         logger.info(f"🔧 任務 {i}")
@@ -74,10 +101,20 @@ def print_config(config):
             logger.info("  ❗ 未設定 dump 動作")
         else:
             dump = task['action']['dump']
+
+            host = dump.get('host')
+            port = dump.get('port')
+            dir_path = os.path.join(OUTPUT_DIR, dump.get('hostname', socket.gethostname()), datetime.now().__format__('%Y%m%d'))
+            logger.info(f"  - 目標主機: {host}:{port}")
+            logger.info(f"  - 目標目錄: {dir_path}")
+
             if dump.get("items"):
                 for item in dump["items"]:
                     db = item.get("database")
                     cols = item.get("collections", [])
+
+                    dump_collections.setdefault(db, []).extend(cols)
+
                     if db and cols:
                         logger.info(f"  - 資料庫: {db}")
                         logger.info(f"    匯出集合: {', '.join(cols)}")
@@ -100,13 +137,25 @@ def print_config(config):
             logger.info(
                 f"  - 是否附加日期欄位: {'是' if restore.get('attach_date') else '否'}")
 
+            host = restore.get('host')
+            port = restore.get('port')
+
+            logger.info(f"  - 目標主機: {host}:{port}")
+
+            dir_path = os.path.join(OUTPUT_DIR, restore.get('hostname', socket.gethostname()))
+
             if restore.get("items"):
                 for item in restore["items"]:
                     db = item.get("database")
                     cols = item.get("collections", [])
+
                     if db and cols:
                         logger.info(f"  - 資料庫: {db}")
                         logger.info(f"    還原集合: {', '.join(cols)}")
+                        if restore.get('date'):
+                            logger.info(f"    指定日期: {restore.get('date')}")
+                        else:
+                            logger.info(f"    未指定日期，將使用最新的備份資料夾 {get_lastst_date(dir_path)}")
                     else:
                         logger.info("  ❗ 資料庫名稱或集合為空，請檢查 restore 設定")
             else:
