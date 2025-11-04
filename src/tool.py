@@ -98,6 +98,12 @@ def print_config(config):
         logger.info(f"🔧 任務 {i}")
         logger.info(f"👉 是否執行: {'是' if task['execute'] else '否'}")
 
+        if 'note' in task:
+            logger.info(f"📝 備註: {task['note']}")
+
+        if not task['execute']:
+            continue
+        
         # SSH 連線資訊
         ssh_info = task.get('ssh', {})
         if ssh_info.get('enable', False):
@@ -212,6 +218,7 @@ def print_config(config):
                         logger.info(f"      抽樣數量: {amount}")
                     else:
                         logger.info("      （未設定抽樣數量，預設導入全部）")
+
     logger.info(f"===================")
 
 
