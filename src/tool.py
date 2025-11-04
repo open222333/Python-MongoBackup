@@ -103,7 +103,7 @@ def print_config(config):
 
         if not task['execute']:
             continue
-        
+
         # SSH 連線資訊
         ssh_info = task.get('ssh', {})
         if ssh_info.get('enable', False):
@@ -219,6 +219,35 @@ def print_config(config):
                     else:
                         logger.info("      （未設定抽樣數量，預設導入全部）")
 
+        # size 說明
+        logger.info("📏 資料庫/集合大小 (Size):")
+        if "size" not in task["action"]:
+            logger.info("  ❗ 未設定 size 動作")
+        else:
+            size = task["action"]["size"]
+
+            host = size.get('host')
+            port = size.get('port')
+            dir_path = os.path.join(OUTPUT_DIR, size.get('hostname', socket.gethostname()))
+            logger.info(f"  - 目標主機: {host}:{port}")
+            logger.info(f"  - 參考目錄: {dir_path}")
+
+            if size.get("items"):
+                for item in size["items"]:
+                    db = item.get("database")
+                    cols = item.get("collections", [])
+
+                    if db and cols:
+                        logger.info(f"  - 資料庫: {db}")
+                        if len(cols) == 1 and cols[0] == "*":
+                            logger.info(f"    檢查集合大小: 所有集合 (*)")
+                        else:
+                            logger.info(f"    檢查集合大小: {', '.join(cols)}")
+                    else:
+                        logger.info("  ❗ 資料庫名稱或集合為空，請檢查 size 設定")
+            else:
+                logger.info("  ❗ 未設定任何要檢查大小的資料庫或集合")
+                
     logger.info(f"===================")
 
 

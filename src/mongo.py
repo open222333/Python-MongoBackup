@@ -107,102 +107,119 @@ class MongoTool():
         return stock[max(stock.keys())]
 
     def dump(self) -> bool:
-        """匯出
+        """匯出 Mongo 資料"""
+        self.set_date(date=datetime.now().strftime('%Y%m%d'))
+        self.generate_backup_dir_path()
 
-        Returns:
-            bool: _description_
-        """
-        self.set_date(date=datetime.now().__format__('%Y%m%d'))
+        # collection="*" 代表匯出整個資料庫
+        if self.collection == "*" or self.collection is None:
+            col_option = ""
+            mongo_logger.info(f'匯出整個資料庫: {self.database} 至 {self.backup_dir_path}')
+        else:
+            col_option = f'-c {self.collection}'
+            mongo_logger.info(f'匯出 {self.database}.{self.collection} 至 {self.backup_dir_path}')
 
-        mongo_logger.info(f'匯出  {self.database} {self.collection} 至 {self.backup_dir_path}')
-        command = ['mongodump', '--quiet', f'-h {self.host}', f'-d {self.database}']
-        if self.username != None and self.password != None:
-            command.append(f'-u {self.username}')
-            command.append(f'-p {self.password}')
-            command.append(f'--authenticationDatabase {self.auth_database}')
-        command.append(f'-c {self.collection}')
-        command.append(f'-o {self.backup_dir_path}')
+        # === 組合 mongodump 指令 ===
+        command = [
+            "mongodump",
+            f"-h {self.host}",
+            f"-d {self.database}",
+            "--quiet"
+        ]
 
+        if self.username and self.password:
+            command.append(f"-u {self.username}")
+            command.append(f"-p {self.password}")
+            command.append(f"--authenticationDatabase {self.auth_database}")
+
+        if col_option:
+            command.append(col_option)
+
+        command.append(f"-o {self.backup_dir_path}")
+
+        # 組合成字串執行
         command = self.list_convert_str(command)
-        mongo_logger.debug(command)
+        mongo_logger.debug(f"執行指令: {command}")
 
         try:
             result = subprocess.run(command, shell=True, capture_output=True, text=True)
+
             if result.returncode == 0:
-                # mongo_logger.debug(f'結果:\n{result.stderr}')
-                pass
+                mongo_logger.info(f"匯出成功：{self.database}")
             else:
-                mongo_logger.error(f'匯出失敗:\n{result.stderr}')
-                # mongo_logger.error(f'錯誤:\n{result.stderr}')
+                # 顯示 stderr 或 stdout 任何一邊的錯誤
+                err_msg = result.stderr.strip() or result.stdout.strip() or "(無錯誤訊息)"
+                mongo_logger.error(f"匯出失敗:\n{err_msg}")
+
+                # 額外 debug：確認隧道仍在
+                if hasattr(self, "tunnel"):
+                    mongo_logger.debug(f"SSH 隧道狀態: {'開啟' if self.tunnel.is_active else '關閉'}")
+
+                return False
+
         except Exception as err:
-            mongo_logger.error(err, exc_info=True)
+            mongo_logger.error("執行 mongodump 發生例外", exc_info=True)
             return False
+
         return True
 
     def restore(self, name: str = None) -> bool:
-        """匯入 mongo集合
-
-        Args:
-            name (str, optional): 備份後集合名稱. Defaults to None.
-
-        Returns:
-            _type_: _description_
-        """
-        if self.date == None:
-            dates = []
-            files = os.listdir(self.dir_path)
-
-            date_pattern = r'(\d{4})(\d{2})(\d{2})'
-
-            for file in files:
-                if os.path.isdir(f'{self.dir_path}/{file}'):
-                    match = re.match(date_pattern, file)
-                    if match:
-                        dates.append(file)
-
-            if len(dates) == 0:
-                raise RuntimeError(f'{self.dir_path} 內沒有任何備份')
-
-            last_date = max([datetime.strptime(date, "%Y%m%d") for date in dates]).strftime("%Y%m%d")
-            self.set_date(date=last_date)
+        """匯入 Mongo 資料"""
+        # 設定日期
+        if not self.date:
+            self.set_date(self.get_lastst_date(self.dir_path))
         else:
-            self.set_date(date=self.date)
+            self.generate_backup_dir_path()
 
-        bson_file = f'{self.backup_dir_path}/{self.database}/{self.collection}.bson'
-
-        command = ['mongorestore', f'-h {self.host}', f'-d {self.database}']
-        if name:
-            mongo_logger.info(f'匯入 {bson_file} 至 {self.database} {name}')
-            command.append(f'-c {name}')
-            if self.username != None and self.password != None:
-                command.append(f'-u {self.username}')
-                command.append(f'-p {self.password}')
-                command.append(f'--authenticationDatabase {self.auth_database}')
-            command.append(bson_file)
+        # 若 collection="*"，則不指定 -c，匯入整個資料庫
+        if self.collection == "*" or self.collection is None:
+            col_option = ""
+            mongo_logger.info(f'匯入整個資料庫: {self.database} 從 {self.backup_dir_path}')
         else:
-            mongo_logger.info(f'匯入 {bson_file} 至 {self.database} {self.collection}')
-            command.append(f'-c {self.collection}')
-            if self.username != None and self.password != None:
-                command.append(f'-u {self.username}')
-                command.append(f'-p {self.password}')
-                command.append(f'--authenticationDatabase {self.auth_database}')
-            command.append(bson_file)
+            col_option = f'-c {self.collection}'
+            mongo_logger.info(f'匯入 {self.database}.{self.collection} 從 {self.backup_dir_path}')
+
+        bson_path = f'{self.backup_dir_path}/{self.database}'
+
+        command = [
+            "mongorestore",
+            f"-h {self.host}",
+            f"-d {self.database}",
+            "--quiet"
+        ]
+
+        if self.username and self.password:
+            command.append(f"-u {self.username}")
+            command.append(f"-p {self.password}")
+            command.append(f"--authenticationDatabase {self.auth_database}")
+
+        if col_option:
+            command.append(col_option)
+
+        command.append(bson_path)
 
         command = self.list_convert_str(command)
+        mongo_logger.debug(f"執行指令: {command}")
 
         try:
-            if os.path.exists(bson_file):
-                mongo_logger.debug(f'指令\n{command}')
+            if os.path.exists(bson_path):
                 result = subprocess.run(command, shell=True, capture_output=True, text=True)
                 if result.returncode == 0:
-                    mongo_logger.debug(f'結果:\n{result.stderr}')
+                    mongo_logger.info(f"匯入成功：{self.database}")
                 else:
-                    mongo_logger.error(f'錯誤:\n{result.stderr}')
+                    err_msg = result.stderr.strip() or result.stdout.strip() or "(無錯誤訊息)"
+                    mongo_logger.error(f"匯入失敗:\n{err_msg}")
+
+                    if hasattr(self, "tunnel"):
+                        mongo_logger.debug(f"SSH 隧道狀態: {'開啟' if self.tunnel.is_active else '關閉'}")
+
+                    return False
             else:
-                raise FileNotFoundError(f'{bson_file} 不存在')
+                raise FileNotFoundError(f"{bson_path} 不存在")
         except Exception as err:
-            mongo_logger.error(err, exc_info=True)
+            mongo_logger.error("執行 mongorestore 發生例外", exc_info=True)
             return False
+
         return True
 
     def drop_collection(self) -> bool:
@@ -225,6 +242,67 @@ class MongoTool():
             return False
         return True
 
+    def get_size(self) -> dict:
+        """
+        取得資料庫或集合大小
+
+        Returns:
+            dict: 資料庫大小資訊，格式如下：
+                {
+                    "database": "db_name",
+                    "total_data_size": 1234567,   # bytes
+                    "total_storage_size": 2345678, # bytes
+                    "collections": {
+                        "coll1": {"data_size": 123, "storage_size": 234},
+                        "coll2": {"data_size": 456, "storage_size": 567}
+                    }
+                }
+        """
+        size_info = {
+            "database": self.database,
+            "total_data_size": 0,
+            "total_storage_size": 0,
+            "collections": {}
+        }
+
+        try:
+            # 若 collection == "*" 或 None，則計算整個資料庫
+            if self.collection == "*" or self.collection is None:
+                for coll_name in self.mongo[self.database].list_collection_names():
+                    stats = self.mongo[self.database].command("collstats", coll_name)
+                    data_size = stats.get("size", 0)
+                    storage_size = stats.get("storageSize", 0)
+                    size_info["collections"][coll_name] = {
+                        "data_size": data_size,
+                        "storage_size": storage_size
+                    }
+                    size_info["total_data_size"] += data_size
+                    size_info["total_storage_size"] += storage_size
+                mongo_logger.info(
+                    f'資料庫 {self.database} 總大小: {size_info["total_data_size"]/1024/1024:.2f} MB, '
+                    f'儲存大小: {size_info["total_storage_size"]/1024/1024:.2f} MB'
+                )
+            else:
+                stats = self.mongo[self.database].command("collstats", self.collection)
+                data_size = stats.get("size", 0)
+                storage_size = stats.get("storageSize", 0)
+                size_info["collections"][self.collection] = {
+                    "data_size": data_size,
+                    "storage_size": storage_size
+                }
+                size_info["total_data_size"] = data_size
+                size_info["total_storage_size"] = storage_size
+                mongo_logger.info(
+                    f'集合 {self.database}.{self.collection} 大小: {data_size/1024/1024:.2f} MB, '
+                    f'儲存大小: {storage_size/1024/1024:.2f} MB'
+                )
+
+        except Exception as e:
+            mongo_logger.error(f'取得大小失敗: {e}', exc_info=True)
+            return {}
+
+        return size_info
+
 
 class MongoToolSSH(MongoTool):
     def __init__(self, host, database, collection, dir_path, date=None,
@@ -244,6 +322,7 @@ class MongoToolSSH(MongoTool):
         self.mongo_port = mongo_port
 
         # === 建立 SSH 隧道 ===
+        mongo_logger.info(f'建立 SSH 隧道: {ssh_user}@{ssh_host}:{ssh_port} -> {mongo_host}:{mongo_port}')
         tunnel_args = dict(
             ssh_address_or_host=(ssh_host, ssh_port),
             ssh_username=ssh_user,
@@ -274,4 +353,5 @@ class MongoToolSSH(MongoTool):
     def close_ssh(self):
         """關閉 SSH 隧道"""
         if hasattr(self, "tunnel") and self.tunnel.is_active:
+            mongo_logger.info("關閉 SSH 隧道")
             self.tunnel.stop()

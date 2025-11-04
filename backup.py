@@ -100,7 +100,33 @@ if __name__ == "__main__":
                 use_key=ssh_info.get('use_key', False)
             )
 
-        # === 匯出 ===
+        # ===============================
+        # 統一建立 MongoTool / MongoToolSSH
+        # ===============================
+        def create_mongo_tool(db, coll="*"):
+            """建立 MongoTool 或 MongoToolSSH"""
+            if use_ssh:
+                mt = MongoToolSSH(
+                    host=f'{host}:{port}',
+                    database=db,
+                    collection=coll,
+                    dir_path=os.path.join(OUTPUT_DIR, hostname),
+                    **ssh_params
+                )
+            else:
+                mt = MongoTool(
+                    host=f'{host}:{port}',
+                    database=db,
+                    collection=coll,
+                    dir_path=os.path.join(OUTPUT_DIR, hostname)
+                )
+            if username and password:
+                mt.set_auth(username, password)
+            return mt
+
+        # ===============================
+        # 匯出 (dump)
+        # ===============================
         if info['action'].get('dump'):
             backup_logger.info('執行匯出')
             dump_info = info['action']['dump']
@@ -115,41 +141,24 @@ if __name__ == "__main__":
                 database = item['database']
                 collections = item.get('collections', [])
 
-                # 🔹若指定為 "*"，則匯出所有集合
-                if (len(collections) == 1 and collections[0] == "*"):
+                if len(collections) == 1 and collections[0] == "*":
                     backup_logger.info(f'匯出資料庫 {database} 的所有集合')
                     mmc = MongoMappingCollections(f'{host}:{port}')
                     mmc.set_databases(database)
                     collections = mmc.get_all_collections()[database]
 
+                mt = create_mongo_tool(database)
                 for collection in collections:
                     backup_logger.info(f'匯出資料庫: {database}，集合: {collection}')
-
-                    if use_ssh:
-                        mt = MongoToolSSH(
-                            host=f'{host}:{port}',
-                            database=database,
-                            collection=collection,
-                            dir_path=os.path.join(OUTPUT_DIR, hostname),
-                            **ssh_params
-                        )
-                    else:
-                        mt = MongoTool(
-                            host=f'{host}:{port}',
-                            database=database,
-                            collection=collection,
-                            dir_path=os.path.join(OUTPUT_DIR, hostname)
-                        )
-
-                    if username and password:
-                        mt.set_auth(username, password)
-
+                    mt.collection = collection
                     mt.dump()
 
-                    if use_ssh:
-                        mt.close_ssh()
+                if use_ssh:
+                    mt.close_ssh()
 
-        # === 匯入 ===
+        # ===============================
+        # 匯入 (restore)
+        # ===============================
         if info['action'].get('restore'):
             backup_logger.info('執行匯入')
             restore_info = info['action']['restore']
@@ -164,59 +173,117 @@ if __name__ == "__main__":
                 database = item['database']
                 collections = item.get('collections', [])
 
-                # 匯入全部集合（若指定為 "*"）
-                if (len(collections) == 1 and collections[0] == "*"):
+                if len(collections) == 1 and collections[0] == "*":
                     if item.get('dirpath'):
                         collections = parse_db_collections(item.get('dirpath'))[database]
                         backup_logger.info(f'匯入資料庫: {database}，集合: {collections}')
                     else:
                         continue
 
+                mt = create_mongo_tool(database)
                 for collection in collections:
                     backup_logger.info(f'匯入資料庫: {database}，集合: {collection}')
+                    mt.collection = collection
 
-                    if use_ssh:
-                        mt = MongoToolSSH(
-                            host=f'{host}:{port}',
-                            database=database,
-                            collection=collection,
-                            dir_path=os.path.join(OUTPUT_DIR, hostname),
-                            **ssh_params
-                        )
-                    else:
-                        mt = MongoTool(
-                            host=f'{host}:{port}',
-                            database=database,
-                            collection=collection,
-                            dir_path=os.path.join(OUTPUT_DIR, hostname)
-                        )
-
-                    if username and password:
-                        mt.set_auth(username, password)
-
-                    # 刪除目前的集合
                     if restore_info.get('drop_collection'):
                         backup_logger.info(f'刪除集合: {collection}')
                         mt.drop_collection()
 
-                    # 指定日期
                     if restore_info.get('date'):
                         backup_logger.info(f'指定日期: {restore_info["date"]}')
                         mt.set_date(date=restore_info['date'])
 
-                    # 集合名稱不帶日期
                     if restore_info.get('attach_date'):
                         backup_logger.info(f'集合名稱不帶日期')
                         mt.restore(name=f'{collection}_{mt.date}')
                     else:
                         mt.restore()
 
-                    # 清空集合資料
                     if restore_info.get('clear_doc'):
                         backup_logger.info(f'清空集合資料: {collection}')
                         mt.delete_all_document()
 
-                    if use_ssh:
-                        mt.close_ssh()
+                if use_ssh:
+                    mt.close_ssh()
 
-    backup_logger.info('備份還原完成')
+        # ===============================
+        # 查看資料庫/集合大小 (size)
+        # ===============================
+        if info['action'].get('size'):
+            backup_logger.info('檢查資料庫/集合大小')
+            size_info = info['action']['size']
+
+            host = size_info.get('host', '127.0.0.1')
+            port = size_info.get('port', '27017')
+            username = size_info.get('username')
+            password = size_info.get('password')
+            hostname = size_info.get('hostname', socket.gethostname())
+
+            for item in size_info['items']:
+                database = item['database']
+                collections = item.get('collections', [])
+
+                # 🔹若指定為 "*"，則取得整個資料庫所有集合
+                if len(collections) == 1 and collections[0] == "*":
+                    if use_ssh:
+                        mt_temp = MongoToolSSH(
+                            host=f'{host}:{port}',
+                            database=database,
+                            collection=None,
+                            dir_path=os.path.join(OUTPUT_DIR, hostname),
+                            **ssh_params
+                        )
+                    else:
+                        mt_temp = MongoTool(
+                            host=f'{host}:{port}',
+                            database=database,
+                            collection=None,
+                            dir_path=os.path.join(OUTPUT_DIR, hostname)
+                        )
+
+                    if username and password:
+                        mt_temp.set_auth(username, password)
+
+                    local_host = f'127.0.0.1:{mt_temp.tunnel.local_bind_port}'
+                    mmc = MongoMappingCollections(local_host)
+                    mmc.set_databases(database)
+                    collections = mmc.get_all_collections()[database]
+
+                    if use_ssh:
+                        mt_temp.close_ssh()
+
+                    backup_logger.info(f'查看資料庫 {database} 的所有集合大小')
+
+                # 建立 MongoTool/MongoToolSSH
+                if use_ssh:
+                    mt = MongoToolSSH(
+                        host=f'{host}:{port}',
+                        database=database,
+                        collection=None,
+                        dir_path=os.path.join(OUTPUT_DIR, hostname),
+                        **ssh_params
+                    )
+                else:
+                    mt = MongoTool(
+                        host=f'{host}:{port}',
+                        database=database,
+                        collection=None,
+                        dir_path=os.path.join(OUTPUT_DIR, hostname)
+                    )
+
+                if username and password:
+                    mt.set_auth(username, password)
+
+                # 逐個 collection 查詢大小
+                for collection in collections:
+                    try:
+                        stats = mt.mongo[database][collection].stats()
+                        size_mb = stats.get('size', 0) / (1024 * 1024)
+                        backup_logger.info(f'{database}.{collection} 大小: {size_mb:.2f} MB')
+                    except Exception as err:
+                        backup_logger.error(f'取得 {database}.{collection} 大小失敗', exc_info=True)
+
+                if use_ssh:
+                    mt.close_ssh()
+
+    backup_logger.info('執行完成')

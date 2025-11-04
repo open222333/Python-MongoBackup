@@ -53,6 +53,21 @@
             "amount": null
           }
         }
+      },
+      "size": {
+        "host": null,
+        "port": null,
+        "username": null,
+        "password": null,
+        "hostname": null,
+        "items": [
+          {
+            "database": "database1",
+            "collections": [
+              "collection1"
+            ]
+          }
+        ]
       }
     }
   }
