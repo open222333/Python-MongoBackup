@@ -55,17 +55,17 @@ class MongoTool():
         self.date = date
         self.generate_backup_dir_path()
 
-    def set_auth(self, username: str, password: str, database: str = 'admin'):
+    def set_auth(self, username: str, password: str, auth_database: str = 'admin'):
         """設置驗證資料
 
         Args:
             username (str): 用戶名
             password (str): 密碼
-            database (str): 驗證資料庫 預設值
+            auth_database (str): 驗證資料庫 預設值
         """
         self.username = username
         self.password = password
-        self.auth_database = database
+        self.auth_database = auth_database
 
     def list_convert_str(self, strs: list):
         """將串列轉成字串

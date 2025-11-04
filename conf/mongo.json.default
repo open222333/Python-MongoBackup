@@ -17,6 +17,7 @@
         "port": null,
         "username": null,
         "password": null,
+        "auth_database": null,
         "hostname": null,
         "items": [
           {
@@ -32,6 +33,7 @@
         "port": null,
         "username": null,
         "password": null,
+        "auth_database": null,
         "hostname": null,
         "date": "20230101",
         "drop_collection": false,
@@ -59,6 +61,7 @@
         "port": null,
         "username": null,
         "password": null,
+        "auth_database": null,
         "hostname": null,
         "items": [
           {

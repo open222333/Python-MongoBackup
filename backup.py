@@ -125,7 +125,7 @@ if __name__ == "__main__":
                     dir_path=os.path.join(OUTPUT_DIR, hostname)
                 )
             if username and password:
-                mt.set_auth(username, password)
+                mt.set_auth(username, password, auth_database=auth_database)
             return mt
 
         # ===============================
@@ -139,6 +139,7 @@ if __name__ == "__main__":
             port = dump_info.get('port', '27017')
             username = dump_info.get('username')
             password = dump_info.get('password')
+            auth_database = dump_info.get('auth_database', "admin")
             hostname = dump_info.get('hostname', socket.gethostname())
 
             for item in dump_info['items']:
@@ -148,8 +149,7 @@ if __name__ == "__main__":
                 if len(collections) == 1 and collections[0] == "*":
                     backup_logger.info(f'匯出資料庫 {database} 的所有集合')
                     mmc = MongoMappingCollections(f'{host}:{port}')
-                    mmc.set_databases(database)
-                    collections = mmc.get_all_collections()[database]
+                    collections = mmc.get_all_collections_by_a_database(database)
 
                 mt = create_mongo_tool(database)
                 for collection in collections:
@@ -171,6 +171,7 @@ if __name__ == "__main__":
             port = restore_info.get('port', '27017')
             username = restore_info.get('username')
             password = restore_info.get('password')
+            auth_database = restore_info.get('auth_database', "admin")
             hostname = restore_info.get('hostname', socket.gethostname())
 
             for item in restore_info['items']:
@@ -221,6 +222,7 @@ if __name__ == "__main__":
             port = size_info.get('port', '27017')
             username = size_info.get('username')
             password = size_info.get('password')
+            auth_database = size_info.get('auth_database', "admin")
             hostname = size_info.get('hostname', socket.gethostname())
 
             for item in size_info['items']:
@@ -246,12 +248,11 @@ if __name__ == "__main__":
                         )
 
                     if username and password:
-                        mt_temp.set_auth(username, password)
+                        mt_temp.set_auth(username, password, auth_database=auth_database)
 
                     local_host = f'127.0.0.1:{mt_temp.tunnel.local_bind_port}'
                     mmc = MongoMappingCollections(local_host)
-                    mmc.set_databases(database)
-                    collections = mmc.get_all_collections()[database]
+                    collections = mmc.get_all_collections_by_a_database(database)
 
                     if use_ssh:
                         mt_temp.close_ssh()
@@ -276,7 +277,7 @@ if __name__ == "__main__":
                     )
 
                 if username and password:
-                    mt.set_auth(username, password)
+                    mt.set_auth(username, password, auth_database=auth_database)
 
                 # 逐個 collection 查詢大小
                 for collection in collections:
@@ -296,5 +297,5 @@ if __name__ == "__main__":
     end_time = time.time()
     elapsed = end_time - start_time
 
-    backup_logger(f"執行時間: {elapsed:.2f} 秒")
-    backup_logger(f"可讀時間: {human_time(elapsed)}")
+    backup_logger.info(f"執行時間: {elapsed:.2f} 秒")
+    backup_logger.info(f"可讀時間: {human_time(elapsed)}")

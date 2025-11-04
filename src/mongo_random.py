@@ -77,13 +77,27 @@ class MongoMappingCollections():
     def set_databases(self, *databases: str):
         self.databases = databases
 
+    def get_all_databases(self):
+        try:
+            db_names = self.client.list_database_names()
+        except Exception:
+            db_names = []
+
+        # 如果 self.databases 有指定資料庫
+        if self.databases:
+            # 把 self.databases 裡的資料庫加入，若還沒在 db_names 中
+            for db_name in self.databases:
+                if db_name not in db_names:
+                    db_names.append(db_name)
+            # 過濾只保留 self.databases 中的資料庫
+            db_names = [db_name for db_name in db_names if db_name in self.databases]
+
+        return db_names
+
     def get_all_collections(self):
         items = {}
-        database_names = self.client.list_database_names()
+        database_names = self.get_all_databases()
         for db_name in database_names:
-            if self.databases:
-                if db_name not in self.databases:
-                    continue
             db = self.client[db_name]
             collection_names = db.list_collection_names()
             for collection_name in collection_names:
@@ -93,6 +107,25 @@ class MongoMappingCollections():
                     items[db_name].append(collection_name)
                 # print(f"Database: {db_name}, Collection: {collection_name}")
         return items
+
+    def get_all_collections_by_a_database(self, database: str):
+        """
+        取得單一資料庫的所有集合名稱。
+        即使帳號沒有權限列出資料庫，也能嘗試取得指定資料庫的集合。
+
+        Args:
+            database (str): 要查詢的資料庫名稱
+
+        Returns:
+            list: 資料庫的集合名稱列表，若無法取得則回傳空列表
+        """
+        try:
+            collections = self.client[database].list_collection_names()
+        except Exception as err:
+            mongo_logger.warning(f"無法取得 {database} 的集合: {err}")
+            collections = []
+
+        return collections
 
 
 def get_filter_trans_jqGrid_to_pymongo(filters, *is_int: str, **multi_column: list):
