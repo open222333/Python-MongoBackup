@@ -247,7 +247,7 @@ def print_config(config):
                         logger.info("  ❗ 資料庫名稱或集合為空，請檢查 size 設定")
             else:
                 logger.info("  ❗ 未設定任何要檢查大小的資料庫或集合")
-                
+
     logger.info(f"===================")
 
 
@@ -262,3 +262,11 @@ def wait_for_user_confirmation():
             exit(0)
         else:
             print("⚠️ 無效輸入，請輸入 Y 或 N（Enter 預設為 N）。")
+
+
+def human_time(seconds: float) -> str:
+    """將秒數轉成 hh:mm:ss"""
+    hours = int(seconds // 3600)
+    minutes = int((seconds % 3600) // 60)
+    secs = int(seconds % 60)
+    return f"{hours:02d}:{minutes:02d}:{secs:02d}"

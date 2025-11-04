@@ -2,10 +2,11 @@ from argparse import ArgumentParser
 from src import MONGO_INFO, OUTPUT_DIR, LOG_LEVEL, LOG_FILE_DISABLE
 from src.mongo import MongoTool, MongoToolSSH
 from src.mongo_random import MongoMappingCollections
-from src.tool import parse_db_collections, print_config, wait_for_user_confirmation
+from src.tool import parse_db_collections, print_config, wait_for_user_confirmation, human_time
 from src.logger import Log
 import textwrap
 import socket
+import time
 import json
 import os
 
@@ -80,6 +81,9 @@ if __name__ == "__main__":
 
     print_config(MONGO_INFO)
     wait_for_user_confirmation()
+
+    # --- 計時開始 ---
+    start_time = time.time()
 
     for info in MONGO_INFO:
         if not info.get('execute'):
@@ -287,3 +291,10 @@ if __name__ == "__main__":
                     mt.close_ssh()
 
     backup_logger.info('執行完成')
+
+    # --- 計時結束 ---
+    end_time = time.time()
+    elapsed = end_time - start_time
+
+    backup_logger(f"執行時間: {elapsed:.2f} 秒")
+    backup_logger(f"可讀時間: {human_time(elapsed)}")
