@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 from src import MONGO_INFO, OUTPUT_DIR, LOG_LEVEL, LOG_FILE_DISABLE
-from src.mongo import MongoTool, MongoMappingCollections, MongoToolSSH
+from src.mongo import MongoTool, MongoToolSSH
+from src.mongo_random import MongoMappingCollections
 from src.tool import parse_db_collections, print_config, wait_for_user_confirmation
 from src.logger import Log
 import textwrap
