@@ -23,6 +23,9 @@ def get_lastst_date(path: str):
     Returns:
         Union[dict, None]: _description_
     """
+    if not os.path.exists(path):
+        # logger.error(f'路徑不存在: {path}')
+        return None
     date_dirs = os.listdir(path)
     format_date = '%Y%m%d'
     stock = {}
@@ -177,7 +180,11 @@ def print_config(config):
                         if restore.get('date'):
                             logger.info(f"    指定日期: {restore.get('date')}")
                         else:
-                            logger.info(f"    未指定日期，將使用最新的備份資料夾 {get_lastst_date(dir_path)}")
+                            lastst_date_dir = get_lastst_date(dir_path)
+                            if lastst_date_dir:
+                                logger.info(f"    未指定日期，將使用最新的備份資料夾 {lastst_date_dir}")
+                            else:
+                                logger.info(f"    未指定日期，且無可用的備份資料夾，先執行匯出。")
                     else:
                         logger.info("  ❗ 資料庫名稱或集合為空，請檢查 restore 設定")
             else:
