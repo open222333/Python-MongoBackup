@@ -87,7 +87,7 @@ if __name__ == "__main__":
         ssh_info = info.get('ssh', {})
         use_ssh = ssh_info.get('enable', False)
 
-        # SSH 設定（如有）
+        # SSH 參數
         ssh_params = {}
         if use_ssh:
             ssh_params = dict(
@@ -114,15 +114,16 @@ if __name__ == "__main__":
                 database = item['database']
                 collections = item.get('collections', [])
 
-                # 若沒指定 collections 則預設全部
-                if len(collections) == 0:
-                    backup_logger.info(f'匯出資料庫: {database}，集合: {collections}')
+                # 🔹若指定為 "*"，則匯出所有集合
+                if (len(collections) == 1 and collections[0] == "*"):
+                    backup_logger.info(f'匯出資料庫 {database} 的所有集合')
                     mmc = MongoMappingCollections(f'{host}:{port}')
                     mmc.set_databases(database)
                     collections = mmc.get_all_collections()[database]
 
                 for collection in collections:
                     backup_logger.info(f'匯出資料庫: {database}，集合: {collection}')
+
                     if use_ssh:
                         mt = MongoToolSSH(
                             host=f'{host}:{port}',
@@ -162,7 +163,8 @@ if __name__ == "__main__":
                 database = item['database']
                 collections = item.get('collections', [])
 
-                if len(collections) == 0:
+                # 匯入全部集合（若指定為 "*"）
+                if (len(collections) == 1 and collections[0] == "*"):
                     if item.get('dirpath'):
                         collections = parse_db_collections(item.get('dirpath'))[database]
                         backup_logger.info(f'匯入資料庫: {database}，集合: {collections}')
@@ -191,7 +193,7 @@ if __name__ == "__main__":
                     if username and password:
                         mt.set_auth(username, password)
 
-                    # 是否刪除集合
+                    # 刪除目前的集合
                     if restore_info.get('drop_collection'):
                         backup_logger.info(f'刪除集合: {collection}')
                         mt.drop_collection()
@@ -201,14 +203,14 @@ if __name__ == "__main__":
                         backup_logger.info(f'指定日期: {restore_info["date"]}')
                         mt.set_date(date=restore_info['date'])
 
-                    # 集合名稱是否附加日期
+                    # 集合名稱不帶日期
                     if restore_info.get('attach_date'):
-                        backup_logger.info('集合名稱不帶日期')
+                        backup_logger.info(f'集合名稱不帶日期')
                         mt.restore(name=f'{collection}_{mt.date}')
                     else:
                         mt.restore()
 
-                    # 清空集合
+                    # 清空集合資料
                     if restore_info.get('clear_doc'):
                         backup_logger.info(f'清空集合資料: {collection}')
                         mt.delete_all_document()

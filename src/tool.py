@@ -95,6 +95,21 @@ def print_config(config):
         logger.info(f"🔧 任務 {i}")
         logger.info(f"👉 是否執行: {'是' if task['execute'] else '否'}")
 
+        # SSH 連線資訊
+        ssh_info = task.get('ssh', {})
+        if ssh_info.get('enable', False):
+            logger.info("🌐 SSH 連線設定：")
+            logger.info(f"  - 狀態: ✅ 啟用")
+            logger.info(f"  - 主機: {ssh_info.get('host')}")
+            logger.info(f"  - 埠號: {ssh_info.get('port', 22)}")
+            logger.info(f"  - 使用者: {ssh_info.get('username')}")
+            if ssh_info.get('use_key'):
+                logger.info(f"  - 驗證方式: 🔑 私鑰登入 ({ssh_info.get('key_path', '未設定 key_path')})")
+            else:
+                logger.info(f"  - 驗證方式: 🔐 密碼登入")
+        else:
+            logger.info("🌐 SSH 連線設定：未啟用")
+
         # dump 說明
         logger.info("📤 匯出 (Dump):")
         if "dump" not in task["action"]:
@@ -117,7 +132,10 @@ def print_config(config):
 
                     if db and cols:
                         logger.info(f"  - 資料庫: {db}")
-                        logger.info(f"    匯出集合: {', '.join(cols)}")
+                        if len(cols) == 1 and cols[0] == "*":
+                            logger.info(f"    匯出集合: 所有集合 (*)")
+                        else:
+                            logger.info(f"    匯出集合: {', '.join(cols)}")
                     else:
                         logger.info("  ❗ 資料庫名稱或集合為空，請檢查 dump 設定")
             else:
@@ -151,7 +169,11 @@ def print_config(config):
 
                     if db and cols:
                         logger.info(f"  - 資料庫: {db}")
-                        logger.info(f"    還原集合: {', '.join(cols)}")
+                        if len(cols) == 1 and cols[0] == "*":
+                            logger.info(f"    還原集合: 所有集合 (*)")
+                        else:
+                            logger.info(f"    還原集合: {', '.join(cols)}")
+
                         if restore.get('date'):
                             logger.info(f"    指定日期: {restore.get('date')}")
                         else:
