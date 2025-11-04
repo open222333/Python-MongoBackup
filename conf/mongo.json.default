@@ -1,6 +1,16 @@
 [
   {
     "execute": false,
+    "note": "備註",
+    "ssh": {
+      "enable": true,
+      "host": "remote_host_ip_or_domain",
+      "port": 22,
+      "username": "ssh_user",
+      "password": "ssh_password",
+      "key_path": "/path/to/private_key",
+      "use_key": false
+    },
     "action": {
       "dump": {
         "host": null,

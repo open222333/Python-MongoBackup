@@ -1,6 +1,6 @@
 from argparse import ArgumentParser
 from src import MONGO_INFO, OUTPUT_DIR, LOG_LEVEL, LOG_FILE_DISABLE
-from src.mongo import MongoTool, MongoMappingCollections
+from src.mongo import MongoTool, MongoMappingCollections, MongoToolSSH
 from src.tool import parse_db_collections, print_config, wait_for_user_confirmation
 from src.logger import Log
 import textwrap
@@ -16,11 +16,21 @@ import os
 
 
 parser = ArgumentParser(description='批量mongodb備份 - 匯出匯入 預設根據 conf/mongo.json 設定執行')
-json_path = parser.add_argument('-j', '--json_path', default=None,
-        help='json檔路徑, 預設 ./conf/mongo.json\nJSON 設定檔路徑，請依照以下格式：\n' + textwrap.dedent("""
-            [
+json_path = parser.add_argument(
+    '-j', '--json_path', default=None,
+    help='json檔路徑, 預設 ./conf/mongo.json\nJSON 設定檔路徑，請依照以下格式：\n' + textwrap.dedent(
+        """
               {
                 "execute": true,
+                "ssh": {
+                    "enable": true,
+                    "host": "remote_host_ip_or_domain",
+                    "port": 22,
+                    "username": "ssh_user",
+                    "password": "ssh_password",
+                    "key_path": "/path/to/private_key",
+                    "use_key": false
+                },
                 "action": {
                   "dump": {
                     "host": "127.0.0.1",
@@ -48,8 +58,8 @@ json_path = parser.add_argument('-j', '--json_path', default=None,
                 }
               }
             ]
-        """)
-    )
+        """
+    ))
 args = parser.parse_args()
 
 backup_logger = Log('BACKUP')
@@ -68,86 +78,60 @@ if args.json_path != None:
 if __name__ == "__main__":
 
     print_config(MONGO_INFO)
-
     wait_for_user_confirmation()
 
     for info in MONGO_INFO:
-        if info.get('execute'):
+        if not info.get('execute'):
+            continue
 
-            # 執行匯出
-            if info['action'].get('dump'):
-                backup_logger.info('執行匯出')
-                host = info['action']['dump'].get('host')
-                if host == None:
-                    host = '127.0.0.1'
+        ssh_info = info.get('ssh', {})
+        use_ssh = ssh_info.get('enable', False)
 
-                port = info['action']['dump'].get('port')
-                if port == None:
-                    port = '27017'
+        # SSH 設定（如有）
+        ssh_params = {}
+        if use_ssh:
+            ssh_params = dict(
+                ssh_host=ssh_info.get('host'),
+                ssh_port=ssh_info.get('port', 22),
+                ssh_user=ssh_info.get('username'),
+                ssh_password=ssh_info.get('password'),
+                ssh_key_path=ssh_info.get('key_path'),
+                use_key=ssh_info.get('use_key', False)
+            )
 
-                username = info['action']['dump'].get('username')
-                password = info['action']['dump'].get('password')
+        # === 匯出 ===
+        if info['action'].get('dump'):
+            backup_logger.info('執行匯出')
+            dump_info = info['action']['dump']
 
-                hostname = info['action']['dump'].get('hostname')
-                if hostname == None:
-                    hostname = socket.gethostname()
+            host = dump_info.get('host', '127.0.0.1')
+            port = dump_info.get('port', '27017')
+            username = dump_info.get('username')
+            password = dump_info.get('password')
+            hostname = dump_info.get('hostname', socket.gethostname())
 
-                for item in info['action']['dump']['items']:
-                    database = item['database']
-                    collections = item.get('collections', [])
+            for item in dump_info['items']:
+                database = item['database']
+                collections = item.get('collections', [])
 
-                    # 若沒指定 collections 則預設全部
-                    if len(collections) == 0:
-                        backup_logger.info(f'匯出資料庫: {database}，集合: {collections}')
-                        mmc = MongoMappingCollections(f'{host}:{port}')
-                        mmc.set_databases(database)
-                        collections = mmc.get_all_collections()[database]
+                # 若沒指定 collections 則預設全部
+                if len(collections) == 0:
+                    backup_logger.info(f'匯出資料庫: {database}，集合: {collections}')
+                    mmc = MongoMappingCollections(f'{host}:{port}')
+                    mmc.set_databases(database)
+                    collections = mmc.get_all_collections()[database]
 
-                    for collection in collections:
-                        backup_logger.info(f'匯出資料庫: {database}，集合: {collection}')
-                        mt = MongoTool(
+                for collection in collections:
+                    backup_logger.info(f'匯出資料庫: {database}，集合: {collection}')
+                    if use_ssh:
+                        mt = MongoToolSSH(
                             host=f'{host}:{port}',
                             database=database,
                             collection=collection,
-                            dir_path=os.path.join(OUTPUT_DIR, hostname)
+                            dir_path=os.path.join(OUTPUT_DIR, hostname),
+                            **ssh_params
                         )
-                        if username and password:
-                            mt.set_auth(username, password)
-                        mt.dump()
-
-            # 執行匯入
-            if info['action'].get('restore'):
-
-                backup_logger.info('執行匯入')
-                host = info['action']['restore'].get('host')
-                if host == None:
-                    host = '127.0.0.1'
-
-                port = info['action']['restore'].get('port')
-                if port == None:
-                    port = '27017'
-
-                username = info['action']['restore'].get('username')
-                password = info['action']['restore'].get('password')
-
-                hostname = info['action']['restore'].get('hostname')
-                if hostname == None:
-                    hostname = socket.gethostname()
-
-                for item in info['action']['restore']['items']:
-                    database = item['database']
-                    collections = item.get('collections', [])
-
-                    if len(collections) == 0:
-                        if item.get('dirpath'):
-                            # 取得資料夾內的集合
-                            collections = parse_db_collections(item.get('dirpath'))[database]
-                            backup_logger.info(f'匯入資料庫: {database}，集合: {collections}')
-                        else:
-                            continue
-
-                    for collection in collections:
-                        backup_logger.info(f'匯入資料庫: {database}，集合: {collection}')
+                    else:
                         mt = MongoTool(
                             host=f'{host}:{port}',
                             database=database,
@@ -155,30 +139,81 @@ if __name__ == "__main__":
                             dir_path=os.path.join(OUTPUT_DIR, hostname)
                         )
 
-                        if username and password:
-                            mt.set_auth(username, password)
+                    if username and password:
+                        mt.set_auth(username, password)
 
-                        # 刪除目前的集合
-                        if info['action']['restore'].get('drop_collection'):
-                            backup_logger.info(f'刪除集合: {collection}')
-                            mt.drop_collection()
+                    mt.dump()
 
-                        # 指定日期
-                        if info['action']['restore'].get('date'):
-                            backup_logger.info(f'指定日期: {info["action"]["restore"]["date"]}')
-                            mt.set_date(date=info['action']['restore']['date'])
+                    if use_ssh:
+                        mt.close_ssh()
 
-                        # 集合名稱不帶日期
-                        if info['action']['restore'].get('attach_date'):
-                            backup_logger.info(f'集合名稱不帶日期')
-                            mt.restore(name=f'{collection}_{mt.date}')
-                        else:
-                            mt.restore()
+        # === 匯入 ===
+        if info['action'].get('restore'):
+            backup_logger.info('執行匯入')
+            restore_info = info['action']['restore']
 
-                    # 清空集合資料
-                    if info['action']['restore'].get('clear_doc'):
+            host = restore_info.get('host', '127.0.0.1')
+            port = restore_info.get('port', '27017')
+            username = restore_info.get('username')
+            password = restore_info.get('password')
+            hostname = restore_info.get('hostname', socket.gethostname())
+
+            for item in restore_info['items']:
+                database = item['database']
+                collections = item.get('collections', [])
+
+                if len(collections) == 0:
+                    if item.get('dirpath'):
+                        collections = parse_db_collections(item.get('dirpath'))[database]
+                        backup_logger.info(f'匯入資料庫: {database}，集合: {collections}')
+                    else:
+                        continue
+
+                for collection in collections:
+                    backup_logger.info(f'匯入資料庫: {database}，集合: {collection}')
+
+                    if use_ssh:
+                        mt = MongoToolSSH(
+                            host=f'{host}:{port}',
+                            database=database,
+                            collection=collection,
+                            dir_path=os.path.join(OUTPUT_DIR, hostname),
+                            **ssh_params
+                        )
+                    else:
+                        mt = MongoTool(
+                            host=f'{host}:{port}',
+                            database=database,
+                            collection=collection,
+                            dir_path=os.path.join(OUTPUT_DIR, hostname)
+                        )
+
+                    if username and password:
+                        mt.set_auth(username, password)
+
+                    # 是否刪除集合
+                    if restore_info.get('drop_collection'):
+                        backup_logger.info(f'刪除集合: {collection}')
+                        mt.drop_collection()
+
+                    # 指定日期
+                    if restore_info.get('date'):
+                        backup_logger.info(f'指定日期: {restore_info["date"]}')
+                        mt.set_date(date=restore_info['date'])
+
+                    # 集合名稱是否附加日期
+                    if restore_info.get('attach_date'):
+                        backup_logger.info('集合名稱不帶日期')
+                        mt.restore(name=f'{collection}_{mt.date}')
+                    else:
+                        mt.restore()
+
+                    # 清空集合
+                    if restore_info.get('clear_doc'):
                         backup_logger.info(f'清空集合資料: {collection}')
-                        if len(collections) != 0:
-                            for collection in collections:
-                                mt.delete_all_document()
+                        mt.delete_all_document()
+
+                    if use_ssh:
+                        mt.close_ssh()
+
     backup_logger.info('備份還原完成')

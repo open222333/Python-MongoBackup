@@ -9,6 +9,7 @@ import random
 import re
 import subprocess
 import traceback
+import paramiko
 
 
 mongo_logger = Log('MONGO')
@@ -227,6 +228,122 @@ class MongoTool():
             mongo_logger.error(err, exc_info=True)
             return False
         return True
+
+
+class MongoToolSSH(MongoTool):
+    """
+    繼承自 MongoTool，增加 SSH 支援。
+    可透過 SSH 遠端執行 mongodump / mongorestore。
+    """
+
+    def __init__(self, host: str, database: str, collection: str, dir_path: str,
+                 ssh_host: str, ssh_port: int = 22,
+                 ssh_user: str = None, ssh_password: str = None,
+                 ssh_key_path: str = None, use_key: bool = False,
+                 date: str = None) -> None:
+        """
+        Args:
+            host (str): MongoDB 伺服器位址（相對於遠端主機）
+            database (str): 資料庫名稱
+            collection (str): 集合名稱
+            dir_path (str): 備份資料夾路徑（遠端主機上的）
+            ssh_host (str): SSH 主機
+            ssh_port (int): SSH 連接埠
+            ssh_user (str): SSH 登入使用者
+            ssh_password (str): SSH 密碼
+            ssh_key_path (str): SSH 私鑰路徑
+            use_key (bool): 是否使用私鑰登入
+            date (str, optional): 日期字串
+        """
+        super().__init__(host, database, collection, dir_path, date)
+        self.ssh_host = ssh_host
+        self.ssh_port = ssh_port
+        self.ssh_user = ssh_user
+        self.ssh_password = ssh_password
+        self.ssh_key_path = ssh_key_path
+        self.use_key = use_key
+        self.ssh_client = None
+
+    def connect_ssh(self):
+        """建立 SSH 連線"""
+        try:
+            mongo_logger.info(f'建立 SSH 連線到 {self.ssh_host}')
+            client = paramiko.SSHClient()
+            client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+
+            if self.use_key and self.ssh_key_path:
+                key = paramiko.RSAKey.from_private_key_file(self.ssh_key_path)
+                client.connect(self.ssh_host, port=self.ssh_port,
+                               username=self.ssh_user, pkey=key)
+            else:
+                client.connect(self.ssh_host, port=self.ssh_port,
+                               username=self.ssh_user, password=self.ssh_password)
+
+            self.ssh_client = client
+        except Exception as err:
+            mongo_logger.error(f'SSH 連線失敗: {err}', exc_info=True)
+            raise
+
+    def close_ssh(self):
+        """關閉 SSH 連線"""
+        if self.ssh_client:
+            self.ssh_client.close()
+            mongo_logger.info('SSH 連線已關閉')
+
+    def run_remote_command(self, command: str):
+        """在遠端執行命令"""
+        try:
+            if not self.ssh_client:
+                self.connect_ssh()
+
+            mongo_logger.debug(f'遠端執行指令: {command}')
+            stdin, stdout, stderr = self.ssh_client.exec_command(command)
+            stdout_str = stdout.read().decode()
+            stderr_str = stderr.read().decode()
+
+            if stderr_str:
+                mongo_logger.error(f'SSH 執行錯誤:\n{stderr_str}')
+            else:
+                mongo_logger.debug(f'SSH 執行結果:\n{stdout_str}')
+        except Exception as err:
+            mongo_logger.error(f'執行 SSH 指令失敗: {err}', exc_info=True)
+            return False
+        return True
+
+    def dump(self) -> bool:
+        """透過 SSH 匯出資料"""
+        self.set_date(date=datetime.now().__format__('%Y%m%d'))
+        mongo_logger.info(
+            f'[SSH] 匯出 {self.database}.{self.collection} 至 {self.dir_path}/{self.date}')
+
+        command = ['mongodump', '--quiet',
+                   f'-h {self.host}', f'-d {self.database}']
+        if self.username and self.password:
+            command += [f'-u {self.username}', f'-p {self.password}',
+                        f'--authenticationDatabase {self.auth_database}']
+        command += [f'-c {self.collection}', f'-o {self.dir_path}/{self.date}']
+
+        cmd_str = self.list_convert_str(command)
+        return self.run_remote_command(cmd_str)
+
+    def restore(self, name: str = None) -> bool:
+        """透過 SSH 匯入資料"""
+        if not self.date:
+            self.date = self.get_lastst_date(self.dir_path)
+        bson_file = f'{self.dir_path}/{self.date}/{self.database}/{self.collection}.bson'
+        restore_target = name if name else self.collection
+
+        mongo_logger.info(
+            f'[SSH] 匯入 {bson_file} 至 {self.database}.{restore_target}')
+        command = ['mongorestore', f'-h {self.host}',
+                   f'-d {self.database}', f'-c {restore_target}']
+        if self.username and self.password:
+            command += [f'-u {self.username}', f'-p {self.password}',
+                        f'--authenticationDatabase {self.auth_database}']
+        command.append(bson_file)
+
+        cmd_str = self.list_convert_str(command)
+        return self.run_remote_command(cmd_str)
 
 
 class MongoRandomSample():
