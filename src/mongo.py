@@ -165,62 +165,74 @@ class MongoTool():
 
     def restore(self, name: str = None) -> bool:
         """匯入 Mongo 資料"""
+
         # 設定日期
         if not self.date:
             self.set_date(self.get_lastst_date(self.dir_path))
         else:
             self.generate_backup_dir_path()
 
-        # 若 collection="*"，則不指定 -c，匯入整個資料庫
-        if self.collection == "*" or self.collection is None:
-            col_option = ""
-            mongo_logger.info(f'匯入整個資料庫: {self.database} 從 {self.backup_dir_path}')
-        else:
-            col_option = f'-c {self.collection}'
-            mongo_logger.info(f'匯入 {self.database}.{self.collection} 從 {self.backup_dir_path}')
-
-        bson_path = f'{self.backup_dir_path}/{self.database}'
+        bson_path = f"{self.backup_dir_path}/{self.database}"
 
         command = [
             "mongorestore",
             f"-h {self.host}",
-            f"-d {self.database}",
-            "--quiet"
         ]
 
+        # auth
         if self.username and self.password:
-            command.append(f"-u {self.username}")
-            command.append(f"-p {self.password}")
-            command.append(f"--authenticationDatabase {self.auth_database}")
+            command.extend([
+                f"-u {self.username}",
+                f"-p {self.password}",
+                f"--authenticationDatabase {self.auth_database}",
+            ])
 
-        if col_option:
-            command.append(col_option)
+        # 匯入整個資料庫
+        if self.collection == "*" or self.collection is None:
+            mongo_logger.info(
+                f"匯入整個資料庫: {self.database} 從 {bson_path}"
+            )
+            command.append(bson_path)
 
-        command.append(bson_path)
+        # 匯入單一 collection（新寫法）
+        else:
+            ns = f"{self.database}.{self.collection}"
+            mongo_logger.info(
+                f"匯入 {ns} 從 {bson_path}"
+            )
+            command.append(f"--nsInclude={ns}")
+            command.append(bson_path)
 
         command = self.list_convert_str(command)
         mongo_logger.debug(f"執行指令: {command}")
 
         try:
-            if os.path.exists(bson_path):
-                result = subprocess.run(command, shell=True, capture_output=True, text=True)
-                if result.returncode == 0:
-                    mongo_logger.info(f"匯入成功：{self.database}")
-                else:
-                    err_msg = result.stderr.strip() or result.stdout.strip() or "(無錯誤訊息)"
-                    mongo_logger.error(f"匯入失敗:\n{err_msg}")
-
-                    if hasattr(self, "tunnel"):
-                        mongo_logger.debug(f"SSH 隧道狀態: {'開啟' if self.tunnel.is_active else '關閉'}")
-
-                    return False
-            else:
+            if not os.path.exists(bson_path):
                 raise FileNotFoundError(f"{bson_path} 不存在")
-        except Exception as err:
+
+            result = subprocess.run(
+                command,
+                shell=True,
+                capture_output=True,
+                text=True,
+            )
+
+            if result.returncode != 0:
+                err_msg = result.stderr.strip() or result.stdout.strip() or "(無錯誤訊息)"
+                mongo_logger.error(f"匯入失敗:\n{err_msg}")
+
+                if hasattr(self, "tunnel"):
+                    mongo_logger.debug(
+                        f"SSH 隧道狀態: {'開啟' if self.tunnel.is_active else '關閉'}"
+                    )
+                return False
+
+            mongo_logger.info(f"匯入成功：{self.database}")
+            return True
+
+        except Exception:
             mongo_logger.error("執行 mongorestore 發生例外", exc_info=True)
             return False
-
-        return True
 
     def drop_collection(self) -> bool:
         '''移除collection'''
