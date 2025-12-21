@@ -173,6 +173,7 @@ class MongoTool():
             self.generate_backup_dir_path()
 
         bson_path = f"{self.backup_dir_path}/{self.database}"
+        bson_root = self.backup_dir_path   # ← 上一層
 
         command = [
             "mongorestore",
@@ -201,7 +202,7 @@ class MongoTool():
                 f"匯入 {ns} 從 {bson_path}"
             )
             command.append(f"--nsInclude={ns}")
-            command.append(bson_path)
+            command.append(bson_root)
 
         command = self.list_convert_str(command)
         mongo_logger.debug(f"執行指令: {command}")
