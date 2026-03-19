@@ -101,9 +101,9 @@ class MongoTool():
         for date in date_dirs:
             try:
                 stock[datetime.strptime(date, format_date)] = date
-            except Exception as err:
-                mongo_logger.error(err, exc_info=True)
-                return None
+            except ValueError:
+                mongo_logger.debug(f"跳過非日期項目: {date!r}")
+                continue
         return stock[max(stock.keys())]
 
     def dump(self) -> bool:
