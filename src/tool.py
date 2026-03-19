@@ -32,9 +32,9 @@ def get_lastst_date(path: str):
     for date in date_dirs:
         try:
             stock[datetime.strptime(date, format_date)] = date
-        except Exception as err:
-            logger.error(err, exc_info=True)
-            return None
+        except ValueError:
+            logger.debug(f"跳過非日期項目: {date!r}")
+            continue
     return stock[max(stock.keys())]
 
 
